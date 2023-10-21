@@ -1,0 +1,5 @@
+# Convert to LF line endings on checkout.
+*.com text eol=lf
+*.txt text eol=lf
+*.properties text eol=lf
+

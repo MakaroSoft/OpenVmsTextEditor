@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+    </head>
+    <script src="../VmsEditor.Web/wwwroot/js/vmsEditor.bundle.js"></script>
+    <body>
+        Test!
+        <div style="border: 1px solid red;" id="editorHere"></div>
+    </body>
+    <script>
+        vmsEditor.load("console.log('hello')\n","#editorHere");
+        window.onDocumentChanged = function() {
+            //alert("Changed");
+        };
+    </script>
+</html>

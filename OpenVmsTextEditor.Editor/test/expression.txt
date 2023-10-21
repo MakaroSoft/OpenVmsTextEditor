@@ -1,0 +1,86 @@
+# Keywords
+
+if
+then
+else
+end
+
+==>
+
+Script(
+  ExpressionStatement(Keyword),
+  ExpressionStatement(Keyword),
+  ExpressionStatement(Keyword),
+  ExpressionStatement(Keyword))
+
+# Strings
+
+"This is a test"
+
+==>
+
+Script(
+  ExpressionStatement(StringLiteral))
+
+# Definition Keywords
+
+external
+dim
+declare
+def
+
+==>
+
+Script(
+  ExpressionStatement(DefinitionKeyword),
+  ExpressionStatement(DefinitionKeyword),
+  ExpressionStatement(DefinitionKeyword),
+  ExpressionStatement(DefinitionKeyword))
+
+# Primitive Types
+
+string
+byte
+long
+float
+
+==>
+
+Script(
+  ExpressionStatement(PrimitiveType),
+  ExpressionStatement(PrimitiveType),
+  ExpressionStatement(PrimitiveType),
+  ExpressionStatement(PrimitiveType))
+
+#Identifiers
+
+I was here
+
+==>
+
+Script(
+  ExpressionStatement(Identifier),
+  ExpressionStatement(Identifier),
+  ExpressionStatement(Identifier))
+
+#FloatingPointLiteral
+
+3.4  3.0  1000.2
+
+==>
+
+Script(
+  ExpressionStatement(FloatingPointLiteral),
+  ExpressionStatement(FloatingPointLiteral),
+  ExpressionStatement(FloatingPointLiteral))
+
+#IntegerLiteral
+
+1 100 45
+
+==>
+
+Script(
+  ExpressionStatement(IntegerLiteral),
+  ExpressionStatement(IntegerLiteral),
+  ExpressionStatement(IntegerLiteral))

@@ -1,0 +1,168 @@
+@top Script { statement* }
+
+@skip { spaces | newline | LineComment }
+
+@tokens {
+//!skippedTokens
+  spaces[@export] { $[\u0009 \u000b\u00a0]+ }
+
+  newline[@export] { $[\r\n] }
+  
+//!identifierTokens
+
+  identifierChar { @asciiLetter | $[.%_$\u{a1}-\u{10ffff}] }
+
+  Identifier { identifierChar (identifierChar | @digit)* }
+
+//!stringTokens
+
+  StringLiteral {
+    "\"" (![\\"\n] | "\\" (![\n] | "\n"))* "\""
+  }
+ 
+//!literalTokens
+
+  "=" "..." "=>"
+  "(" ")" "[" "]" "{" "}"
+  "." "," ";" ":"
+
+//!numberTokens
+
+  digits {
+    $[0-9]+ ("_"+ $[0-9]+)*
+  }
+
+  hexDigits {
+    $[A-Fa-f0-9]+ ("_" $[A-Fa-f0-9]+)*
+  }
+
+  IntegerLiteral {
+    (digits |
+     ("0x" | "0X") hexDigits |
+     ("0o" | "0O") $[0-7]+ ("_" $[0-7]+)* |
+     ("0b" | "0B") $[01]+ ("_" $[01]+)*)
+    ("l" | "L")?
+  }
+
+    exponent {
+    $[eE] ("-" | "+")? digits
+  }
+
+  hexExponent {
+    $[pP] ("-" | "+")? digits
+  }
+
+  floatSuffix {
+    $[fFdD]
+  }
+
+  FloatingPointLiteral {
+    digits ("." digits? exponent? floatSuffix? | exponent floatSuffix? | floatSuffix) |
+    "." digits exponent? floatSuffix? |
+    ("0x" | "0X") (hexDigits ("." hexDigits?)? | "." hexDigits) hexExponent floatSuffix?
+  }
+
+
+  @precedence { FloatingPointLiteral, IntegerLiteral }
+@precedence { FloatingPointLiteral, Identifier }
+
+}
+
+statement[@isGroup=Statement] {
+  ExpressionStatement { expression }
+}
+
+
+expression[@isGroup=Expression] {
+  @specialize[@name=Keyword]<Identifier, 
+      "if" | "IF" | 
+      "then" | "THEN" |
+      "else" | "ELSE" |
+      "end" | "END" |
+      "return" | "RETURN" |
+      "gosub" | "GOSUB" |
+      "goto" | "GOTO" |
+      "size" | "SIZE" |
+      "on" | "ON" |
+      "error" | "ERROR" |
+      "option" | "OPTION" |
+      "print" | "PRINT" |
+      "open" | "OPEN" |
+      "for" | "FOR" |
+      "input" | "INPUT" |
+      "output" | "OUTPUT" |
+      "organization" | "ORGANIZATION" |
+      "fixed" | "FIXED" |
+      "access" | "ACCESS" |
+      "modify" | "MODIFY" |
+      "allow" | "ALLOW" |
+      "read" | "READ" |
+      "indexed" | "INDEXED" |
+
+      "as" | "AS" |
+      "file" | "FILE" |
+      "sequential" | "SEQUENTIAL" |
+
+      "for" | "FOR" |
+      "to" | "TO" |
+      "select" | "SELECT" |
+      "case" | "CASE" |
+      "do" | "DO" |
+      "while" | "WHILE" |
+      "map" | "MAP" |
+      "type" | "TYPE" |
+
+      "next" | "NEXT" |
+      "close" | "CLOSE" |
+      "step" | "STEP" |
+
+      "when" | "WHEN" |
+      "until" | "UNTIL" |
+      "use" | "USE" |
+      "back" | "BACK" |
+      "iterate" | "ITERATE" |
+      "%include" | "%INCLUDE" |
+      "in" | "IN" |
+
+
+
+      "break" | "BREAK" > |
+
+  @specialize[@name=DefinitionKeyword]<Identifier, 
+      "external" | "EXTERNAL" |
+      "dim" | "DIM" |
+      "declare" | "DECLARE" |
+      "def" | "DEF" |
+      "fnend" | "FNEND" |
+      "function" | "FUNCTION"> |
+
+  @specialize[@name=PrimitiveType]<Identifier, 
+      "string" | "STRING" | 
+      "byte" | "BYTE" | 
+      "long" | "LONG" |
+      "float" | "FLOAT" |
+      "double" | "DOUBLE" |
+      "real" | "REAL" |
+      "gfloat" | "GFLOAT" |
+      "word" | "WORD" |
+      "quad" | "QUAD"> |
+
+  Identifier |
+  StringLiteral |
+  FloatingPointLiteral |
+  IntegerLiteral
+}
+//!lineComment
+
+@skip {} {
+  LineComment { "!" (lineCommentContent)* lineCommentEnd }
+}
+
+@local tokens {
+  lineCommentEnd { "!" | "\n" }
+  @else lineCommentContent
+}
+//kw<term> { @specialize[@name={term}]<Identifier, term> }
+
+@external propSource basicHighlight from "./highlight.js"
+@detectDelim

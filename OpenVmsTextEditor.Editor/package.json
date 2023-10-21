@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "name": "test",
+  "type": "module",
+  "private": false,
+  "dependencies": {
+    "codemirror": "^6.0.1",
+    "lezer-generator": "^0.13.4"
+  },
+  "devDependencies": {
+    "@lezer/generator": "^1.0.0",
+    "@rollup/plugin-commonjs": "^25.0.5",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "mocha": "^10.2.0"
+  },
+  "vscode-color-picker.languages": [
+    "javascript",
+    "typescript"
+  ],
+  "scripts": {
+    "build": "lezer-generator src/lezer-decBasic/decBasic.grammar -o src/lezer-decBasic/parser && tsc && rollup -c",
+    "test": "mocha test/test-*.js"
+  }
+}
