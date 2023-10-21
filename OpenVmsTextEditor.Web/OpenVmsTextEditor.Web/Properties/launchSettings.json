@@ -3,7 +3,7 @@
     "VmsEditor": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "VmsEditor?startPath=c/repos",
+      "launchUrl": "VmsEditor?startPath=c",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
