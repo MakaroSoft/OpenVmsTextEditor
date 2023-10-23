@@ -30,27 +30,25 @@ The previous step created an __OpenVmsExplorerApi-1_0_0.zip__ file in the packag
 
 Once the zip file has been transferred, unzip it to the location of your choice. I like to unzip it to disk:[000000]. This will create disk:[MakaroSoft.OpenVmsExplorerApi]
 
-## Configure ms$vmsexplorer_home: logical
+## Configure
 
 > [!NOTE]
 > I will be referencing __disk:[makarosoft...]__ in this documentation. You need to replace that with where you actually installed the Explorer code.
 
-Edit `disk:[makarosoft.OpenVmsExplorerApi.CONF]setup_logicals.com` and replace __disk:[makarosoft.OpenVmsExplorerApi__ with the actual location.
+Enter the following command:
 
-Now, you can execute the following command:
 ```
-@disk:[makarosoft.OpenVmsExplorerApi.CONF]setup_logicals.com
+$ASSIGN/SYSTEM disk:[MakaroSoft.OpenVmsExplorerApi.] MS$VMSEXPLORER_HOME/TRANS=(CONCEAL)
 ```
-You can now reference all the files with the __@ms$vmsexplorer_home:__ prefix. Example: @ms$vmsexplorer_home:[bin]vmsexplorer_submit
 
-## Configuration continued
+You can now reference all the files with the __@ms$vmsexplorer_home:__ prefix. Example: @ms$vmsexplorer_home:[bin]vmsexplorer_submit.
 Add the following lines to `sys$manager:systartup_vms.com`. This will make sure the explorer service will start back up on reboot.
 
 ```
 $!
 $! Start up the MakaroSoft VMS explorer
 $!
-$ @disk:[makarosoft.OpenVmsExplorerApi.CONF]setup_logicals.com
+$ $ASSIGN/SYSTEM disk:[MakaroSoft.OpenVmsExplorerApi.] MS$VMSEXPLORER_HOME/TRANS=(CONCEAL)
 $ @ms$vmsexplorer_home:[bin]vmsexplorer_submit
 ```
 
@@ -58,13 +56,14 @@ $ @ms$vmsexplorer_home:[bin]vmsexplorer_submit
 
 To run the OpenVMS explorer, execute the following command. This will start up the explorer service as a detached process.
 ```
-$ @ms$vmsexplorer_home:[bin]vmsexplorer_submit
+@ms$vmsexplorer_home:[bin]vmsexplorer_submit
 ```
 
 # Frequently Asked Questions
 
 + [How do I change the port?](#how-do-i-change-the-port)
 + [How do I change the user that the detached process is running under?](#how-do-i-change-the-user-that-the-detached-process-is-running-under)
++ [How do I know if the detached process is running?](#how-do-i-know-if-the-detached-process-is-running)
 
 ## How do I change the port?
 The default port is __8001__ and is defined in __ms$vmsexplorer_home:[bin]vmsExplorer.com__. You need to edit that file and change 8001 to the port number you
@@ -72,3 +71,9 @@ want to use.
 
 ## How do I change the user that the detached process is running under?
 The default user is __system__ and is defined in __ms$vmsexplorer_home:[CONF]vmsExplorer.com__. You need to edit that file and change /USER=SYSTEM to /USER= and the username you want.
+
+## How do I know if the detached process is running?
+Enter the following command to see if the process is running:
+```
+show sys/proc=VmsExplorer
+```
