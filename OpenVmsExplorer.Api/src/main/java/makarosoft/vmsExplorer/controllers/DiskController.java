@@ -6,6 +6,9 @@ import java.util.ArrayList;
 
 import javax.swing.filechooser.FileSystemView;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.gson.Gson;
 
 import makarosoft.VmsWeb.ApiController;
@@ -14,6 +17,8 @@ import makarosoft.VmsWeb.Response;
 
 public class DiskController extends ApiController {
 
+	Logger _logger = LogManager.getLogger(DiskController.class);
+	
 	@Override
 	public void get(Request request, Response response) throws IOException {
 		try {
@@ -41,8 +46,7 @@ public class DiskController extends ApiController {
 			response.addHeader("Content-Type", "application/json");
 			response.addBody(sb.toString());
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			e.printStackTrace();
+			_logger.error(e.getMessage(), e);
 			response.setResponseCode(500, "Internal Server Error");
 		}
 	}

@@ -9,14 +9,20 @@ import java.io.BufferedReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import makarosoft.vmsExplorer.Engine;
+
 
 class SocketHandler implements Runnable {
-	private Socket socket;
-	private ArrayList<ApiController> controllers;
+	private Socket _socket;
+	private ArrayList<ApiController> _controllers;
+	Logger _logger = LogManager.getLogger(SocketHandler.class);
 
 	public SocketHandler(Socket socket, ArrayList<ApiController> controllers) {
-		this.socket = socket;
-		this.controllers = controllers;
+		_socket = socket;
+		_controllers = controllers;
 	}
 
 	/**
@@ -24,7 +30,7 @@ class SocketHandler implements Runnable {
 	 */
 	private void respond(int statusCode, String msg, OutputStream out) throws IOException {
 		String responseLine = "HTTP/1.1 " + statusCode + " " + msg + "\r\n\r\n";
-		log(responseLine);
+		_logger.debug(responseLine);
 		out.write(responseLine.getBytes());
 	}
 
@@ -33,8 +39,8 @@ class SocketHandler implements Runnable {
 		OutputStream out = null;
 
 		try {
-			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-			out = socket.getOutputStream();
+			in = new BufferedReader(new InputStreamReader(_socket.getInputStream()));
+			out = _socket.getOutputStream();
 
 			Request request = new Request(in);
 			if (!request.parse()) {
@@ -45,7 +51,7 @@ class SocketHandler implements Runnable {
 			boolean foundHandler = false;
 			Response response = new Response(out);
 			
-			for (ApiController apiController : controllers) {
+			for (ApiController apiController : _controllers) {
 				String path = fixPath(apiController.getPath());
 				Pattern pattern = Pattern.compile("^" + path + "(/[a-z0-9_;\\-\\$\\.]+)*$", Pattern.CASE_INSENSITIVE);
 			    Matcher matcher = pattern.matcher(request.getPath());
@@ -92,7 +98,7 @@ class SocketHandler implements Runnable {
 				if (in != null) {
 					in.close();
 				}
-				socket.close();
+				_socket.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -104,7 +110,4 @@ class SocketHandler implements Runnable {
 //			return path.replaceAll("/", "\\/");
 	}
 
-	private void log(String msg) {
-		System.out.println(msg);
-	}
 }

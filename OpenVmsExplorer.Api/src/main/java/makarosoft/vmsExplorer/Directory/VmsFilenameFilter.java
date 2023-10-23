@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import makarosoft.vmsExplorer.util.StrU;
 
 public class VmsFilenameFilter implements FilenameFilter {
@@ -14,6 +17,7 @@ public class VmsFilenameFilter implements FilenameFilter {
 	
 	private Pattern _pattern = null;
 	private boolean _ignoreDirectories;
+	Logger _logger = LogManager.getLogger(VmsFilenameFilter.class);
 
 	public VmsFilenameFilter(String filter, boolean ignoreDirectories) {
 		_doneAlready.clear();
@@ -38,7 +42,7 @@ public class VmsFilenameFilter implements FilenameFilter {
 			filter = "^" + filter + "$";
 			
 			_pattern = Pattern.compile(filter, Pattern.CASE_INSENSITIVE);
-			System.out.println("Regex Filter = " + filter);
+			_logger.debug("Regex Filter = {}", filter);
 		}
 		
 	}

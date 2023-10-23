@@ -9,6 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import makarosoft.VmsWeb.ApiController;
 import makarosoft.VmsWeb.Request;
 import makarosoft.VmsWeb.Response;
@@ -16,6 +19,8 @@ import makarosoft.vmsExplorer.Directory.FileFormatter;
 import makarosoft.vmsExplorer.Directory.VmsFilenameFilter;
 
 public class FileController extends ApiController {
+
+	Logger _logger = LogManager.getLogger(FileController.class);
 	
 	@Override
 	public void get(Request request, Response response) throws IOException {
@@ -38,8 +43,7 @@ public class FileController extends ApiController {
 			response.addHeader("Content-Type", "text/plain; "+encoding);
 			response.addBody(fileContent);
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			e.printStackTrace();
+			_logger.error(e.getMessage(), e);
 			response.setResponseCode(500, "Internal Server Error");
 		}
 	}
@@ -60,8 +64,7 @@ public class FileController extends ApiController {
 			response.addHeader("Content-Type", "text/plain; "+encoding);
 			response.addBody(newVersion);
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			e.printStackTrace();
+			_logger.error(e.getMessage(), e);
 			response.setResponseCode(500, "Internal Server Error");
 		}
 	}
@@ -71,7 +74,7 @@ public class FileController extends ApiController {
 		
 		// when getting a file, there will always be at least one slash
 		String fullNameFormatted = FileFormatter.IsVmsFile(fullName) ? FileFormatter.toVmsFileFormat(fullName) : FileFormatter.toWindowsFileFormat(fullName);
-		System.out.println("File to save: " + fullNameFormatted);
+		_logger.debug("File to save: {}", fullNameFormatted);
 
 		boolean isVms = false;
 		int version = 0;
@@ -81,7 +84,7 @@ public class FileController extends ApiController {
 			version = Integer.parseInt(fullNameFormatted.substring(index + 1));
 			fullNameFormatted = fullNameFormatted.substring(0, index);
 		}
-		//System.out.println("Version = " + version);
+		_logger.debug("Version = {}", version);
 				
 		byte[] bytes = isVms? body.getBytes("iso-8859-1") : body.getBytes("utf-8");
 		
@@ -100,7 +103,7 @@ public class FileController extends ApiController {
 			index = fullNameFormatted.indexOf("]");
 			String path = fullNameFormatted.substring(0, index + 1);
 			String fileName = fullNameFormatted.substring(index + 1);
-			//System.out.println("Path = " + path + ", filename = " + fileName);
+			_logger.debug("Path = {}, filename = {}", path, fileName);
 			
 			VmsFilenameFilter filenameFilter = new VmsFilenameFilter(fileName + ";", true);
 			
@@ -108,8 +111,8 @@ public class FileController extends ApiController {
 					
 	        // filter by name
 	        File[] files = theFolder.listFiles(filenameFilter);
-	        //System.out.println("filename count = " + files.length);
-	        //System.out.println("The new filename is " + files[0].getName());
+	        _logger.debug("filename count = {}", files.length);
+	        _logger.debug("The new filename is {}", files[0].getName());
 	        return files[0].getName();
 		}
 		
@@ -120,7 +123,7 @@ public class FileController extends ApiController {
 	private String getFile(String fullName) {
 		// when getting a file, there will always be at least one slash
 		String fullNameFormatted = FileFormatter.IsVmsFile(fullName) ? FileFormatter.toVmsFileFormat(fullName) : FileFormatter.toWindowsFileFormat(fullName);
-		System.out.println("File to download: " + fullNameFormatted);
+		_logger.debug("File to download: {}", fullNameFormatted);
 		
 		if (FileFormatter.IsVmsFile(fullName)) {
 			return readLineByLineJava8(fullNameFormatted, StandardCharsets.ISO_8859_1);
