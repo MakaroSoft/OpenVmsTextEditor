@@ -1,2 +1,2 @@
-$SET NOVERIFY
-$SUBMIT MS$VMSEXPLORER_HOME:[BIN]VMSEXPLORER_DETACH.COM/NOPRINT/NOTIFY/USER=SYSTEM
+$set noverify
+$submit ms$vmsExplorer_home:[bin]vmsExplorer_detach.com/noprint/notify/user=system

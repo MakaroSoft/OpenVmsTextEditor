@@ -8,8 +8,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class WindowsDirectory implements IDirectory {
 	private String _folder;
+	Logger _logger = LogManager.getLogger(WindowsDirectory.class);
 
 	public WindowsDirectory(String folder) {
 		_folder = folder;
@@ -19,8 +23,8 @@ public class WindowsDirectory implements IDirectory {
 	public List<makarosoft.vmsExplorer.models.File> getFiles(String filter) {
 		String folder = FileFormatter.toWindowsFolderFormat(_folder);
 		
-		System.out.println("Filter = " + filter);
-		System.out.println("attempting to get folder content for: "+folder);
+		_logger.debug("Filter = {}", filter);
+		_logger.debug("attempting to get folder content for: {}", folder);
 		
 		File theFolder = new File(folder);
 		if (!theFolder.exists() || !theFolder.isDirectory()) {
@@ -46,7 +50,7 @@ public class WindowsDirectory implements IDirectory {
 		List<makarosoft.vmsExplorer.models.File> newList = Stream.concat(directoriesResult.stream(), filesResult.stream())
                 .collect(Collectors.toList());
 		
-		System.out.println("**** Count is: "+newList.size());
+		_logger.debug("**** Count is: {}", newList.size());
 		return newList;
 	}
 }

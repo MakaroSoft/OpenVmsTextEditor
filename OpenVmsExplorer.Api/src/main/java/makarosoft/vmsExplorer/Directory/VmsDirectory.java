@@ -9,10 +9,15 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import makarosoft.vmsExplorer.controllers.FileController;
 import makarosoft.vmsExplorer.util.StrU;
 
 public class VmsDirectory implements IDirectory {
 	private String _folder;
+	Logger _logger = LogManager.getLogger(VmsDirectory.class);
 
 	public VmsDirectory(String folder) {
 		_folder = folder;
@@ -22,9 +27,9 @@ public class VmsDirectory implements IDirectory {
 	public List<makarosoft.vmsExplorer.models.File> getFiles(String filter) {
 		String folder = FileFormatter.toVmsFolderFormat(_folder);
 		
-		System.out.println("Filter = " + filter);
+		_logger.debug("Filter = {}", filter);
 		VmsFilenameFilter filenameFilter = new VmsFilenameFilter(filter);
-		System.out.println("attempting to get folder content for: " + folder);
+		_logger.debug("attempting to get folder content for: {}", folder);
 		
 		File theFolder = new File(folder);
 		if (!theFolder.exists() || !theFolder.isDirectory()) {
@@ -53,7 +58,7 @@ public class VmsDirectory implements IDirectory {
 		List<makarosoft.vmsExplorer.models.File> newList = Stream.concat(directoriesResult.stream(), filesResult.stream())
                 .collect(Collectors.toList());
 		
-		System.out.println("**** Count is: "+newList.size());
+		_logger.debug("**** Count is: {}", newList.size());
 		return newList;
 	}
 

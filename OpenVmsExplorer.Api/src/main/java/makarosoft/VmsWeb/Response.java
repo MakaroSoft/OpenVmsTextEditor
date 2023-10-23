@@ -10,39 +10,39 @@ import java.util.HashMap;
  * some state.
  */
 public class Response {
-	private OutputStream out;
-	private int statusCode;
-	private String statusMessage;
-	private Map<String, String> headers = new HashMap<String, String>();
-	private String body;
+	private OutputStream _out;
+	private int _statusCode;
+	private String _statusMessage;
+	private Map<String, String> _headers = new HashMap<String, String>();
+	private String _body;
 
 	public Response(OutputStream out) {
-		this.out = out;
+		_out = out;
 	}
 
 	public void setResponseCode(int statusCode, String statusMessage) {
-		this.statusCode = statusCode;
-		this.statusMessage = statusMessage;
+		_statusCode = statusCode;
+		_statusMessage = statusMessage;
 	}
 
 	public void addHeader(String headerName, String headerValue) {
-		this.headers.put(headerName, headerValue);
+		_headers.put(headerName, headerValue);
 	}
 
 	public void addBody(String body) {
-		headers.put("Content-Length", Integer.toString(body.length()));
-		this.body = body;
+		_headers.put("Content-Length", Integer.toString(body.length()));
+		_body = body;
 	}
 
 	public void send() throws IOException {
-		headers.put("Connection", "Close");
-		out.write(("HTTP/1.1 " + statusCode + " " + statusMessage + "\r\n").getBytes());
-		for (String headerName : headers.keySet()) {
-			out.write((headerName + ": " + headers.get(headerName) + "\r\n").getBytes());
+		_headers.put("Connection", "Close");
+		_out.write(("HTTP/1.1 " + _statusCode + " " + _statusMessage + "\r\n").getBytes());
+		for (String headerName : _headers.keySet()) {
+			_out.write((headerName + ": " + _headers.get(headerName) + "\r\n").getBytes());
 		}
-		out.write("\r\n".getBytes());
-		if (body != null) {
-			out.write(body.getBytes());
+		_out.write("\r\n".getBytes());
+		if (_body != null) {
+			_out.write(_body.getBytes());
 		}
 	}
 }

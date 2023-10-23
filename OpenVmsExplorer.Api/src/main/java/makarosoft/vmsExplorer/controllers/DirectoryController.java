@@ -3,15 +3,21 @@ package makarosoft.vmsExplorer.controllers;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.gson.Gson;
 
 import makarosoft.VmsWeb.ApiController;
 import makarosoft.VmsWeb.Request;
 import makarosoft.VmsWeb.Response;
+import makarosoft.vmsExplorer.Engine;
 import makarosoft.vmsExplorer.Directory.DirectoryFactory;
 import makarosoft.vmsExplorer.Directory.IDirectory;
 
 public class DirectoryController extends ApiController {
+	
+	Logger _logger = LogManager.getLogger(DirectoryController.class);
 	
 	@Override
 	public void get(Request request, Response response) throws IOException {
@@ -37,8 +43,7 @@ public class DirectoryController extends ApiController {
 			response.addHeader("Content-Type", "application/json");
 			response.addBody(json);
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
-			e.printStackTrace();
+			_logger.error(e.getMessage(), e);
 			response.setResponseCode(500, "Internal Server Error");
 		}
 	}
