@@ -33,9 +33,9 @@ public class WindowsIo : IOperatingSystemIo
         return diskName.Substring(0, index);
     }
 
-    public async Task<IList<File>> GetDirectoryFiles(string filter, string fullFolderName)
+    public async Task<IList<File>> GetDirectoryFiles(string? include, string? exclude, bool showHistory, string fullFolderName)
     {
-        _logger.LogDebug("GetDirectoryFiles(filter = {filter}, fullFolderName = {fullFolderName})", filter, fullFolderName);
+        _logger.LogDebug("GetDirectoryFiles(include = {include}, exclude={exclude}, showHistory={showHistory}, fullFolderName = {fullFolderName})", include, exclude, showHistory, fullFolderName);
         fullFolderName = FileFormatter.ToWindowsFolderFormat(fullFolderName);
 
         var dirs = Directory.GetDirectories(fullFolderName).Select(x => (File)new File

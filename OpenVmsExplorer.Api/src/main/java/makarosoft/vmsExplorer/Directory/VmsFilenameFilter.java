@@ -35,6 +35,8 @@ public class VmsFilenameFilter implements FilenameFilter {
 			if (!filter.contains(";")) filter += ";*";
 			
 			filter = filter.replace(".", "\\.");
+			filter = filter.replace("$", "\\$");
+			
 			filter = filter.replace(";*", ";" + anyNumber + "+");
 			filter = filter.replace("*", anyCharacter + "+");
 			filter = filter.replace("?", anyCharacter);
