@@ -44,15 +44,44 @@ public class WindowsIo : IOperatingSystemIo
             Dir = true
         }).ToList();
 
-        var files = Directory.GetFiles(fullFolderName).Select(x => (File)new File
+        string[] allFiles = Directory.GetFiles(fullFolderName);
+        if (!string.IsNullOrWhiteSpace(exclude))
+        {
+            string[] patternsToExclude = exclude.Split(',');
+
+            allFiles = allFiles
+                        .Where(file => !patternsToExclude.Any(pattern => MatchesPattern(file, pattern)))
+                        .ToArray();
+        }
+
+        if (!string.IsNullOrWhiteSpace(include))
+        {
+            string[] patternsToInclude = include.Split(',');
+
+            allFiles = allFiles
+                        .Where(file => patternsToInclude.Any(pattern => MatchesPattern(file, pattern)))
+                        .ToArray();
+        }
+
+        var files = allFiles.Select(x => new File
         {
             Name = Path.GetFileName(x)
         }).ToList();
+
 
         var filesAndFolders = dirs;
         dirs.AddRange(files);
 
         return await Task.Run(() => filesAndFolders);
+    }
+
+    private bool MatchesPattern(string filePath, string pattern)
+    {
+        string fileName = Path.GetFileName(filePath);
+        string regexPattern = "^" + System.Text.RegularExpressions.Regex.Escape(pattern)
+            .Replace("\\*", ".*")
+            .Replace("\\?", ".") + "$";
+        return System.Text.RegularExpressions.Regex.IsMatch(fileName, regexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
     }
 
     public async Task<string> GetFile(string fullFileName)

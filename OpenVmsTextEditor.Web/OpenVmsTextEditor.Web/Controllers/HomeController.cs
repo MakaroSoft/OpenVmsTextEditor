@@ -23,6 +23,9 @@ public class HomeController : Controller
     public async Task<IActionResult> Index(string? include, string? exclude, bool showHistory, string startPath)
     {
         _logger.LogDebug("Index(include={include}, exclude={exclude}, showHistory={showHistory}, startPath={path})", include, exclude, showHistory, startPath);
+        ViewBag.ShowHistory = showHistory == true? "Checked" : "";
+        ViewBag.Include = include ?? "";
+        ViewBag.Exclude = exclude ?? "";
         return View(await _pageInfoService.GetPageInfo(include, exclude, showHistory, startPath));
     }
 

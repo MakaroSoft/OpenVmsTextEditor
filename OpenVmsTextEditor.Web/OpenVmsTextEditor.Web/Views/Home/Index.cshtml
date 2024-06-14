@@ -144,6 +144,9 @@
         var currentTabIndex = 0;
         var currentTabData = null;
 
+        var includeValue = "@ViewBag.Include";
+        var excludeValue = "@ViewBag.Exclude";
+
         var disks = @Html.Raw(JsonSerializer.Serialize(Model.Disks));
         var files = @Html.Raw(JsonSerializer.Serialize(Model.Files));
         var breadCrumb = @Html.Raw(JsonSerializer.Serialize(Model.BreadCrumb));
@@ -166,12 +169,53 @@
         var tabTemplate = $.templates("#tabTemplate");
         tabTemplate.link("#myTabArea", tabsObject);
 
-        $("#include").on('keyup',
-            function(e) {
-                if (e.key === 'Enter' || e.keyCode === 13) {
+        var $include = $("#include");
+        var $exclude = $("#exclude");
+        var $showHistory = $("#showHistory")
+
+        $include.on('blur',
+            function () {
+                if ($include.val() !== includeValue) {
+                    includeValue = $include.val();
                     var fullName = breadCrumb.join("/");
                     changeFolder(fullName);
                 }
+            });
+
+        $include.on('keyup',
+            function(e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    if ($include.val() !== includeValue) {
+                        includeValue = $include.val();
+                        var fullName = breadCrumb.join("/");
+                        changeFolder(fullName);
+                    }
+                }
+            });
+
+        $exclude.on('blur',
+            function () {
+                if ($exclude.val() !== excludeValue) {
+                    excludeValue = $exclude.val();
+                    var fullName = breadCrumb.join("/");
+                    changeFolder(fullName);
+                }
+            });
+
+        $exclude.on('keyup',
+            function (e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    if ($exclude.val() !== excludeValue) {
+                        excludeValue = $exclude.val();
+                        var fullName = breadCrumb.join("/");
+                        changeFolder(fullName);
+                    }
+                }
+            });
+        $showHistory.on('change',
+            function () {
+                var fullName = breadCrumb.join("/");
+                changeFolder(fullName);
             });
 
         $("#myTabs").on("click",
@@ -512,18 +556,18 @@
 
                         <div class="ml-md-3 form-inline">
                             <label class="mr-sm-2">Include</label>
-                            <input id="include" class="form-control" type="text" placeholder="*.*" aria-label="include"
+                            <input id="include" class="form-control" type="text" placeholder="*.*" aria-label="include" value="@ViewBag.Include"
                                    data-toggle="tooltip" data-placement="bottom" title="Use a comma to separate additional includes">
                         </div>
 
                     <div class="ml-md-3 form-inline">
                         <label class="mr-sm-2">Exclude</label>
-                        <input id="exclude" class="form-control" type="text" placeholder="*.obj" aria-label="exclude"
+                        <input id="exclude" class="form-control" type="text" aria-label="exclude" value="@ViewBag.Exclude"
                                data-toggle="tooltip" data-placement="bottom" title="Use a comma to separate additional excludes">
                     </div>
 
                     <div class="ml-md-3 form-check-inline">
-                        <input class="form-check-input" type="checkbox" value="" id="showHistory">
+                        <input class="form-check-input" type="checkbox" id="showHistory" @ViewBag.ShowHistory>
                         <label class="form-check-label" for="showHistory">
                             Show History
                         </label>
