@@ -28,9 +28,12 @@ public class DirectoryController extends ApiController {
 				return;
 			}
 			
-			String filter = request.getParameter("filter");
+			String include = request.getParameter("include");
+			String exclude = request.getParameter("exclude");
+			String showHistoryString = request.getParameter("showHistory");
+			boolean showHistory = Boolean.parseBoolean(showHistoryString);
 			
-			List<makarosoft.vmsExplorer.models.File> folderContents = getFolderContent(folder, filter);
+			List<makarosoft.vmsExplorer.models.File> folderContents = getFolderContent(folder, include, exclude, showHistory);
 			if (folderContents == null) {
 				response.setResponseCode(404, "Not Found");
 				return;
@@ -48,8 +51,8 @@ public class DirectoryController extends ApiController {
 		}
 	}
 	
-	private List<makarosoft.vmsExplorer.models.File> getFolderContent(String folder, String filter) {
+	private List<makarosoft.vmsExplorer.models.File> getFolderContent(String folder, String include, String exclude, boolean showHistory) {
 		IDirectory directory = new DirectoryFactory().Create(folder);
-		return directory.getFiles(filter);		
+		return directory.getFiles(include, exclude,showHistory);		
 	}
 }

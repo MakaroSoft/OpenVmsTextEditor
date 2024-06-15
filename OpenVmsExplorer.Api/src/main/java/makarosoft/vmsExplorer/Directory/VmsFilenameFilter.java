@@ -15,42 +15,65 @@ public class VmsFilenameFilter implements FilenameFilter {
 	private HashMap<String,String> _doneAlready = new HashMap<String, String>();
 	private boolean _currentVersionOnly = false;
 	
-	private Pattern _pattern = null;
+	private Pattern _includePattern = null;
+	private Pattern _excludePattern = null;
 	private boolean _ignoreDirectories;
 	Logger _logger = LogManager.getLogger(VmsFilenameFilter.class);
 
-	public VmsFilenameFilter(String filter, boolean ignoreDirectories) {
+	public VmsFilenameFilter(String include, String exclude, boolean showHistory, boolean ignoreDirectories) {
 		_doneAlready.clear();
 		_ignoreDirectories = ignoreDirectories;
 		
-		String anyCharacter = "[a-z0-9_\\-\\$]";
-		String anyNumber = "[0-9]";
+		_currentVersionOnly = !showHistory;
 		
-		// convert the vms filter to a regular expression
-		if (filter != null) {
-			if (filter.endsWith(";") || !filter.contains(";")) _currentVersionOnly = true;
-			
-			// make sure version is on the filter
-			if (filter.endsWith(";")) filter += "*";
-			if (!filter.contains(";")) filter += ";*";
-			
-			filter = filter.replace(".", "\\.");
-			filter = filter.replace("$", "\\$");
-			
-			filter = filter.replace(";*", ";" + anyNumber + "+");
-			filter = filter.replace("*", anyCharacter + "+");
-			filter = filter.replace("?", anyCharacter);
-			
-			filter = "^" + filter + "$";
-			
-			_pattern = Pattern.compile(filter, Pattern.CASE_INSENSITIVE);
-			_logger.debug("Regex Filter = {}", filter);
-		}
+		// convert the vms include filter to a regular expression
+		_includePattern = buildPattern(include);
 		
+		// convert the vms exclude filter to a regular expression
+		_excludePattern = buildPattern(exclude);		
 	}
 	
-	public VmsFilenameFilter(String filter) {
-		this(filter, false);
+	private Pattern buildPattern(String filter) {
+		if (isNullOrWhiteSpace(filter)) return null;
+		
+		String anyCharacter = "[a-z0-9_\\-\\$]";
+		String anyNumber = "[0-9]";
+				
+		String[] filters = filter.split(",");
+		 
+        for (int i = 0; i < filters.length; i++) {
+            String pattern = filters[i];
+            
+            // example: baie
+            if (!pattern.contains(".") && !pattern.contains("*")) pattern += "*.*;*";
+            // example: baie*a*
+            if (!pattern.contains(".")) pattern += ".*;*";
+
+            if (pattern.endsWith(";")) pattern += "*";
+            if (!pattern.contains(";")) pattern += ";*";
+
+            pattern = pattern.replace(".", "\\.");
+            pattern = pattern.replace("$", "\\$");
+
+            pattern = pattern.replace(";*", ";" + anyNumber + "+"); // one or more
+            pattern = pattern.replace("*", anyCharacter + "*"); // zero or more
+            pattern = pattern.replace("?", anyCharacter);
+            //pattern = pattern.replace("+", "*"); // change one or more to zero or more
+
+            pattern = "^" + pattern + "$";
+            
+            filters[i] = pattern;
+        }
+
+        // Join the individual patterns with the | (OR) operator
+        String finalPattern = String.join("|", filters);
+		_logger.debug("Regex filter = {}", finalPattern);
+		 
+        return Pattern.compile(finalPattern, Pattern.CASE_INSENSITIVE); 		
+	}
+	
+	public VmsFilenameFilter(String include, String exclude, boolean showHistory) {
+		this(include, exclude, showHistory, false);
 	}
 
 	@Override
@@ -60,13 +83,18 @@ public class VmsFilenameFilter implements FilenameFilter {
     		return !_ignoreDirectories;
     	}
     	
-    	if (_pattern != null) {
-    	    Matcher matcher = _pattern.matcher(name);
+    	if (_excludePattern != null) {
+    	    Matcher matcher = _excludePattern.matcher(name);
+    	    boolean found = matcher.find();
+    	    if (found) return false;
+    	}
+    	
+    	if (_includePattern != null) {
+    	    Matcher matcher = _includePattern.matcher(name);
     	    boolean found = matcher.find();
     	    if (!found) return false;
-    	    return stripDuplicates(name);
     	}
-    	return true;
+	    return stripDuplicates(name);
 	}
 	
 	private boolean stripDuplicates(String name) {
@@ -85,4 +113,7 @@ public class VmsFilenameFilter implements FilenameFilter {
 		return name.substring(0, index);
 	}
 
+    private static boolean isNullOrWhiteSpace(String str) {
+        return str == null || str.trim().isEmpty();
+    }
 }

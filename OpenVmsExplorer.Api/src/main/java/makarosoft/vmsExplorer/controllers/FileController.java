@@ -105,7 +105,8 @@ public class FileController extends ApiController {
 			String fileName = fullNameFormatted.substring(index + 1);
 			_logger.debug("Path = {}, filename = {}", path, fileName);
 			
-			VmsFilenameFilter filenameFilter = new VmsFilenameFilter(fileName + ";", true);
+			// (include, exclude, showHistory=false, ignoreDirectories = true)
+			VmsFilenameFilter filenameFilter = new VmsFilenameFilter(fileName + ";", "", false, true);
 			
 			File theFolder = new File(path);
 					
