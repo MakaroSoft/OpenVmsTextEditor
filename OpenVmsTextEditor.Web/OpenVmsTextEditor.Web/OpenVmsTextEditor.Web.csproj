@@ -17,4 +17,8 @@
     <ProjectReference Include="..\OpenVmsTextEditor.Infrastructure\OpenVmsTextEditor.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\lib\bootstrap\" />
+  </ItemGroup>
+
 </Project>
