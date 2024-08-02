@@ -52,7 +52,7 @@ public class VmsIo : IOperatingSystemIo
     }
 
 
-    public async Task<IList<File>> GetDirectoryFiles(string filter, string fullFolderName)
+    public async Task<IList<File>> GetDirectoryFiles(string? include, string? exclude, bool showHistory, string fullFolderName)
     {
         _logger.LogDebug("GetDirectoryFiles({0})", fullFolderName);
 
@@ -64,8 +64,9 @@ public class VmsIo : IOperatingSystemIo
             _logger.LogDebug("vmsExplorerApiUrl = {0}", vmsExplorerApiUrl);
 
             client.DefaultRequestHeaders.Add("accept", "application/json");
-            var requestUri = $"{vmsExplorerApiUrl}/api/directory/{fullFolderName}";
-            if (!string.IsNullOrWhiteSpace(filter)) requestUri += $"?filter={filter}";
+            var requestUri = $"{vmsExplorerApiUrl}/api/directory/{fullFolderName}?showHistory={showHistory}";
+            if (!string.IsNullOrWhiteSpace(include)) requestUri += $"&include={include}";
+            if (!string.IsNullOrWhiteSpace(exclude)) requestUri += $"&exclude={exclude}";
             _logger.LogDebug("requestUri = {0}", requestUri);
 
             var response = await client.GetAsync(requestUri);

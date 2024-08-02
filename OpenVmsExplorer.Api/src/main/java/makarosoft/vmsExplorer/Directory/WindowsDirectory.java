@@ -20,10 +20,10 @@ public class WindowsDirectory implements IDirectory {
 	}
 
 	@Override
-	public List<makarosoft.vmsExplorer.models.File> getFiles(String filter) {
+	public List<makarosoft.vmsExplorer.models.File> getFiles(String include, String exclude, boolean showHistory) {
 		String folder = FileFormatter.toWindowsFolderFormat(_folder);
 		
-		_logger.debug("Filter = {}", filter);
+		_logger.debug("include = {}, exclude = {}, showHistory = {}", include, exclude, showHistory);
 		_logger.debug("attempting to get folder content for: {}", folder);
 		
 		File theFolder = new File(folder);

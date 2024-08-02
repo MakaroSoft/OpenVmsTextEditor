@@ -19,7 +19,7 @@
         }
 
         .mainDiv {
-            height: calc(100vh - 135px);
+            height: calc(100vh - 100px);
         }
 
         .flex {
@@ -28,7 +28,7 @@
         }
 
         .cm-editor {
-            height: calc(100vh - 225px);
+            height: calc(100vh - 190px);
             border-left: 1px solid #ddd;
             border-right: 1px solid #ddd;
             border-bottom: 1px solid #ddd;
@@ -54,6 +54,18 @@
             right: 0;
             z-index: 2;
         }
+
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.1);
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 2;
+        }
     </style>
 }
 @section Scripts
@@ -66,6 +78,12 @@
     <script id="diskTemplate" type="text/x-jsrender">
         {{for #data}}
         <a class="aDisk dropdown-item" href="#">{{:#data}}</a>
+        {{/for}}
+    </script>
+
+    <script id="recentsTemplate" type="text/x-jsrender">
+        {{for #data}}
+        <li><a class="dropdown-item aGoto" href="#">{{:Name}}</a></li>
         {{/for}}
     </script>
 
@@ -105,7 +123,7 @@
         <ul id="myTabs" class="nav nav-tabs">
             {^{for Tabs}}
             <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#{{:TabId}}">{^{modCode:Modified}}{^{:Name}} <i class="aCloseButton far fa-window-close"></i></a>
+                <a class="nav-link" id="{{:TabId}}-tab" data-bs-toggle="tab" data-bs-target="#{{:TabId}}">{^{modCode:Modified}}{^{:Name}} <i class="aCloseButton far fa-window-close"></i></a>
             </li>
             {{/for}}
         </ul>
@@ -136,16 +154,36 @@
                 if (index !== -1) {
                     return `nameNoVer='${text.substring(0, index)}'`;
                 }
-                return "";
+                    return `nameNoVer='${text}'`;
             });
 
         const GUTTER_SIZE = 20;
         var tabCount = 1;
         var currentTabIndex = 0;
         var currentTabData = null;
+        var _$fileTd = null
+        var _notification = new MakaroSoft.CommonNotification();
+        var _dialog = new MakaroSoft.CommonDialog( { required: true });
+
+        var includeValue = "@ViewBag.Include";
+        var excludeValue = "@ViewBag.Exclude";
+        var gotoValue = "";
 
         var disks = @Html.Raw(JsonSerializer.Serialize(Model.Disks));
         var files = @Html.Raw(JsonSerializer.Serialize(Model.Files));
+        var _recents = [];
+
+        disks.contains = function (name) {
+            return this.some(function (diskName) {
+                return diskName.toLowerCase() === name.toLowerCase();
+            });
+        };
+        _recents.contains = function (newObject) {
+            return this.some(function (obj) {
+                return obj.Name === newObject.Name;
+            });
+        };
+
         var breadCrumb = @Html.Raw(JsonSerializer.Serialize(Model.BreadCrumb));
         var tabsObject = {
             "Tabs": tabs = []
@@ -160,18 +198,116 @@
         var htmlOutput = folderTemplate.render(files);
         $("#myFiles").html(htmlOutput);
 
+        var recentsTemplate = $.templates("#recentsTemplate");
+        htmlOutput = recentsTemplate.render(_recents);
+        $("#gotos").html(htmlOutput);
+
         var breadCrumbTemplate = $.templates("#breadCrumbTemplate");
         breadCrumbTemplate.link("#myBreadCrumb", breadCrumb);
 
         var tabTemplate = $.templates("#tabTemplate");
         tabTemplate.link("#myTabArea", tabsObject);
 
-        $("#myFilter").on('keyup',
-            function(e) {
-                if (e.key === 'Enter' || e.keyCode === 13) {
+        var $include = $("#include");
+        var $exclude = $("#exclude");
+        var $goto = $("#goto");
+        var $btnGoto = $("#btn-goto");
+        var $showHistory = $("#showHistory")
+
+        $include.on('blur',
+            function () {
+                if ($include.val() !== includeValue) {
+                    includeValue = $include.val();
                     var fullName = breadCrumb.join("/");
                     changeFolder(fullName);
                 }
+            });
+
+        $include.on('keyup',
+            function(e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    if ($include.val() !== includeValue) {
+                        includeValue = $include.val();
+                        var fullName = breadCrumb.join("/");
+                        changeFolder(fullName);
+                    }
+                }
+            });
+
+        $exclude.on('blur',
+            function () {
+                if ($exclude.val() !== excludeValue) {
+                    excludeValue = $exclude.val();
+                    var fullName = breadCrumb.join("/");
+                    changeFolder(fullName);
+                }
+            });
+
+        $exclude.on('keyup',
+            function (e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    if ($exclude.val() !== excludeValue) {
+                        excludeValue = $exclude.val();
+                        var fullName = breadCrumb.join("/");
+                        changeFolder(fullName);
+                    }
+                }
+            });
+
+
+
+
+
+        $goto.on('blur',
+            function () {
+                if ($goto.val() !== gotoValue) {
+                    gotoValue = $goto.val();
+                    handleGoto(gotoValue);
+                }
+            });
+
+        $goto.on('keyup',
+            function (e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    gotoValue = $goto.val();
+                    handleGoto(gotoValue);
+                }
+            });
+
+        $btnGoto.click(function () {
+            gotoValue = $goto.val();
+            handleGoto(gotoValue);
+        });
+
+        function isDisk(possibleDisk) {
+            return disks.contains(possibleDisk);
+            return false;
+        }
+
+        function handleGoto(folder) {
+            if (folder === "") return;
+
+            if (folder.startsWith("/")) {
+                // tack on the current drive name
+                folder = breadCrumb[0] + folder;
+            } else {
+                var folderParts = folder.split("/");
+                if (folderParts.length === 0) return;
+                var possibleDisk = folderParts[0];
+                if (!isDisk(possibleDisk)) {
+                    var fullPath = breadCrumb.join("/");
+                    folder = fullPath + "/" + folder;
+                }
+            }
+
+            // todo handle different goto folder scenarios
+            changeFolder(folder);
+        }
+
+        $showHistory.on('change',
+            function () {
+                var fullPath = breadCrumb.join("/");
+                changeFolder(fullPath);
             });
 
         $("#myTabs").on("click",
@@ -181,22 +317,109 @@
                 var dataItem = $.view(this).data;
                 var index = $.view(this).index;
                 if (dataItem.Modified) {
-                    var modal = $('#myModal');
-                    modal.attr('data-index', index);
-                    modal.find('.modal-title').text(`Remove Tab For ${dataItem.Name}`);
-                    modal.modal('show');
+                    if (dataItem.Name === "New!") {
+                        removeTabNew(index, dataItem);
+                    } else {
+                        removeTabExisting(index, dataItem);
+                    }
                 } else {
                     removeTab(index);
                 }
             });
 
+        function removeTabExisting(index, dataItem) {
+            _dialog.show(`Remove Tab For ${dataItem.Name}`, "Do you want to save your changes first?", ["Yes","No","Cancel"], function(e) {
+                _dialog.close();
+                if (e === "Yes") {
+                    saveTab(index); // TODO async!!
+                    removeTab(index);
+                }
+                if (e === "No") {
+                    removeTab(index);
+                }
+            });
+        }
+
+            function removeTabNew(index, dataItem) {
+                _dialog.show(`Remove Tab For ${dataItem.Name}`, "Enter the file name to save as <input id='btnRemoveNewTab' class='form-control' placeHolder='filename.filetype' type='text'></input>", ["Save","Remove","Cancel"], function(e) {
+                if (e === "Save") {
+                    var filename = $("#btnRemoveNewTab").val();
+                    if (filename === "" || filename === "New!") {
+                        _notification.show("Invalid file name","error");
+                        return;
+                    }
+                    _dialog.close();
+
+                    //filename += ";1";
+
+                    // setup the new file name
+                    var tabData = tabsObject.Tabs[index];
+                    $.observable(tabData).setProperty("Name", filename);
+                    $.observable(tabData).setProperty("FullName", `${tabData.Path}/${filename}`);
+
+                    saveTab(index); // TODO async!!
+                    removeTab(index);
+                }
+                if (e === "Remove") {
+                    _dialog.close();
+                    removeTab(index);
+                }
+                if (e === "Cancel") {
+                    _dialog.close();
+                }
+            });
+        }
+
         $("#saveBtn").click(function() {
             if (!currentTabData.Modified) return;
-            var modal = $('#saveModal');
-            modal.attr('data-index', currentTabIndex);
-            modal.find('.modal-title').text(`Save Changes To ${currentTabData.Name}`);
-            modal.modal('show');
+
+            if (currentTabData.Name === "New!") {
+                doSaveAs();
+                return;
+            }
+            _dialog.show("Save Changes", "Do you want to save your changes?", ["Yes","Cancel"], function(e) {
+                _dialog.close();
+                if (e == "Yes") {
+                    saveTab(currentTabIndex);
+                }
+            });
+
+
         });
+        $("#saveAsBtn").click(function () {
+            doSaveAs();
+        });
+
+        $("#newBtn").click(function () {
+                addNewFile("New!");
+        });
+
+        function doSaveAs() {
+            if (!currentTabData.Modified) return;
+            _dialog.show("Save As", "Enter the file name to save as <input id='btnDoSaveFileName' class='form-control' placeHolder='filename.filetype' type='text'></input>", ["Save","Cancel"], 
+            function(e) {
+                if (e == "Save") {
+                    var filename = $("#btnDoSaveFileName").val();
+                    if (filename === "" || filename === "New!") {
+                        _notification.show("Invalid file name","error");
+                        return;
+                    }
+                    _dialog.close();
+
+                    //filename += ";1";
+                    // setup the new file name
+                    var tabData = tabsObject.Tabs[currentTabIndex];
+
+                    $.observable(tabData).setProperty("Name", filename);
+                    $.observable(tabData).setProperty("FullName", `${tabData.Path}/${filename}`);
+
+                    saveTab(currentTabIndex); // TODO async!!
+                }
+                if (e == "Cancel") {
+                    _dialog.close();
+                }
+            });
+        }
 
         function removeTab(index) {
             if (index === currentTabIndex) {
@@ -234,49 +457,65 @@
                 var fullName = breadCrumb.slice(0, index + 1).join("/");
                 changeFolder(fullName);
             });
+        $("#gotos").on("click",
+            ".aGoto",
+            function (event) {
+                var fullName = $(this).text();
+                changeFolder(fullName);
+            });
 
         $("#myFiles").on("click",
             ".aRow",
-            function() {
+            function(event) {
                 var isFolder = $(this).find("a").hasClass("aFolder");
                 if (isFolder) {
                     handleFolder($(this).find("a").text());
                 } else {
-                    addFile($(this).find("span").text());
+                    event.preventDefault();
+
+                    var position = $(this).offset();
+
+
+                    _$fileTd = $(this).find("td");
+                    _fileName = $(this).find("span").text()
+                    _$fileTd.css('background-color', 'yellow');
+
+                    // Show the popup menu near the clicked link
+                    $('#sharedPopupMenu').css({
+                        top: position.top + $(this).height(),
+                        left: position.left
+                    }).addClass('show');
+
+                    $('body').append('<div class="modal-backdrop"></div>');
+
+
                 }
             });
 
-        //--------------------------------------------------------
-        function hideMyModal() {
-            var myModal = $('#myModal');
-            var index = parseInt(myModal.attr('data-index'));
-            myModal.modal('hide');
-            return index;
-        }
-
-        $("#btnModalNo").click(function() {
-            var index = hideMyModal();
-            removeTab(index);
+        $(document).on('click', function (event) {
+            if (!$(event.target).closest('.aRow').length) {
+                $('#sharedPopupMenu').removeClass('show');
+                $('.modal-backdrop').remove();
+                if(_$fileTd !== null) _$fileTd.css('background-color', '');
+                _$fileTd = null;
+            }
+        });
+        
+        $(document).ready(function () {
+            $("#popupEdit").on('click', function () {
+                addFile(_fileName);
+            });
+            $("#popupCopy").on('click', function () {
+                alert("Copy not implemented yet");
+            });
+            $("#popupRename").on('click', function () {
+                alert("Rename not implemented yet");
+            });
+            $("#popupDelete").on('click', function () {
+                alert("Delete not implemented yet");
+            });
         });
 
-        $("#btnModalYes").click(function() {
-            var index = hideMyModal();
-            saveTab(index); // TODO async!!
-            removeTab(index);
-        });
-
-        //--------------------------------------------------------
-        function hideSaveModal() {
-            var modal = $('#saveModal');
-            var index = parseInt(modal.attr('data-index'));
-            modal.modal('hide');
-            return index;
-        }
-
-        $("#btnSaveModalYes").click(function() {
-            var index = hideSaveModal();
-            saveTab(index);
-        });
 
         //--------------------------------------------------------
 
@@ -296,8 +535,35 @@
             changeFolder(fullName);
         };
 
+        function addRecent(folder) {
+            var newObject = { Name: folder }
+            if (_recents.contains(newObject)) return;
+
+            _recents.push(newObject);
+
+
+            _recents.sort(function (a, b) {
+                var nameA = a.Name.toLowerCase();
+                var nameB = b.Name.toLowerCase();
+                if (nameA < nameB) {
+                    return -1;
+                }
+                if (nameA > nameB) {
+                    return 1;
+                }
+                return 0;
+            });
+
+            var htmlOutput = recentsTemplate.render(_recents);
+            $("#gotos").html(htmlOutput);
+            //alert(folder);
+        };
+
         function addFile(file) {
             var fullName = `${breadCrumb.join("/")}/${file}`;
+            addRecent(`${breadCrumb.join("/")}`)
+
+            if (isOpenAlready(fullName)) return;
 
             var tabData = {
                 "Path": breadCrumb.join("/"),
@@ -306,6 +572,7 @@
                 "TabId": `tab${tabCount}`,
                 "Modified": false
             }
+
             tabCount++;
 
             $.observable(tabsObject.Tabs).insert(tabData);
@@ -314,6 +581,27 @@
             insertedTab.tab('show');
 
             loadFile(fullName, tabData);
+        };
+
+        function addNewFile(file) {
+            var fullName = `${breadCrumb.join("/")}/${file}`;
+
+            var tabData = {
+                "Path": breadCrumb.join("/"),
+                "Name": file,
+                "FullName": fullName,
+                "TabId": `tab${tabCount}`,
+                "Modified": true
+            }
+
+            tabCount++;
+
+            $.observable(tabsObject.Tabs).insert(tabData);
+
+            var insertedTab = $('#myTabs a:last');
+            insertedTab.tab('show');
+            tabData.View = openVmsEditor.load("", "#" + tabData.TabId + " div");
+
         };
 
         const gutterStyle = dimension => ({
@@ -334,6 +622,24 @@
         window.onbeforeunload = function() {
             return true;
         };
+
+        function isOpenAlready(fullName) {
+            var found = false;
+            var tabId = "";
+            $.each(tabsObject.Tabs, function(index, obj) {
+                if (obj.FullName === fullName) {
+                    found = true;
+                    tabId = obj.TabId;
+                    return false;
+                }
+            });
+            if (found) {
+                _notification.show("This file is already open","info", 4000);
+                $("#" + tabId + "-tab").tab("show");
+                return true;
+            }
+            return false;
+        }
 
         function equalIgnoreCase(a, b) {
             return a.localeCompare(b, undefined, { sensitivity: 'accent' }) === 0;
@@ -375,7 +681,16 @@
                                 var selector = $(`#myFiles span[nameNoVer='${fileNameNoVers}'`).first();
                                 var tr = selector.closest('tr');
                                 var testHtml = fileTemplate.render(tabData);
-                                tr.before(testHtml);
+                                if (tr.length === 0) {
+                                    $("#myFiles").append(testHtml);
+                                    return;
+                                }
+                                var showHistory = $("#showHistory").is(':checked');
+                                if (showHistory) {
+                                    tr.before(testHtml);
+                                } else {
+                                    tr.replaceWith(testHtml);
+                                }
                             }
                         } else {
                             alert("err");
@@ -384,7 +699,6 @@
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         hideLoading("#two");
-                        alert("wth?");
                         alert("response:" + xhr.responseText);
                     }
                 });
@@ -412,7 +726,6 @@
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         hideLoading("#two");
-                        alert("wth?");
                         alert("response:" + xhr.responseText);
                     }
                 });
@@ -442,11 +755,13 @@
         function changeFolder(folder) {
             try {
                 showLoading("#one");
-                var filter = $("#myFilter").val();
+                var include = $("#include").val();
+                var exclude = $("#exclude").val();
+                var showHistory = $("#showHistory").is(':checked');
 
                 $.ajax({
                     type: 'POST',
-                    url: `VmsEditor/GetFolder?filter=${filter}&path=${folder}`,
+                    url: `VmsEditor/GetFolder?include=${include}&exclude=${exclude}&showHistory=${showHistory}&path=${folder}`,
                     dataType: 'json',
                     success: function(data, status, xhr) {
                         hideLoading("#one");
@@ -457,19 +772,20 @@
                             var htmlOutput = folderTemplate.render(files);
                             $("#myFiles").html(htmlOutput);
                         } else {
-                            alert("err");
-                            alert(xhr.responseText);
+                            console.log(xhr.responseText);
+                            _notification.show("Goto folder was not found: " + folder, "error");
                         }
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         hideLoading("#one");
-                        alert("wth?");
-                        alert("response:" + xhr.responseText);
+                        console.log(xhr.responseText);
+                        _notification.show("Goto folder was not found: " + folder, "error");
                     }
                 });
             } catch (exception) {
                 hideLoading("#one");
-                alert(exception);
+                console.log(exception);
+                _notification.show("Goto folder was not found: " + folder, "error");
             }
         }
 
@@ -481,7 +797,7 @@
             });
 
         $(function() {
-            $('[data-toggle="tooltip"]').tooltip();
+            $('[data-bs-toggle="tooltip"]').tooltip();
         });
     </script>
     }
@@ -490,37 +806,101 @@
         <div id="bodyBlock"></div>
         <div class="row">
             <div class="col-md-12">
-                <nav class="navbar navbar-expand-lg navbar-light bg-light">
+
+
+
+
+            <nav class="navbar navbar-expand-lg bg-dark-subtle ">
+                <div class="container-fluid">
                     <a class="navbar-brand" href="#">OpenVMS Text Editor</a>
-                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
-
                     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                        <ul class="navbar-nav">
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+
+                            <li class="nav-item dropdown ps-3">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     Drives
                                 </a>
-                                <div id="myDisks" class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <ul id="myDisks" class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                </ul>
+                            </li>
+
+
+                            <li class="nav-item ps-3">
+                                <div class="row g-1 align-items-center">
+                                    <div class="col-auto">
+                                        <label for="include" class="col-form-label">Include</label>
+                                    </div>
+                                    <div class="col-auto">
+                                        <input id="include" class="form-control" type="text" aria-label="exclude" value="@ViewBag.Include"
+                                               data-bs-toggle="tooltip" data-bs-placement="bottom" title="Use a comma to separate additional excludes">
+                                    </div>
                                 </div>
                             </li>
+
+                            <li class="nav-item ps-3">
+                                <div class="row g-1 align-items-center">
+                                    <div class="col-auto">
+                                        <label for="exclude" class="col-form-label">Exclude</label>
+                                    </div>
+                                    <div class="col-auto">
+                                        <input id="exclude" class="form-control" type="text" aria-label="exclude" value="@ViewBag.Exclude"
+                                               data-bs-toggle="tooltip" data-bs-placement="bottom" title="Use a comma to separate additional excludes">
+                                    </div>
+                                </div>
+                            </li>
+
+                            <li class="nav-item ps-3">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="showHistory" @ViewBag.ShowHistory>
+                                    <label class="form-check-label" for="showHistory">
+                                        Show History
+                                    </label>
+                                </div>
+                            </li>
+
                         </ul>
-                        <div class="mr-auto ml-md-3 form-inline">
-                            <label class="mr-sm-2">Filter</label>
-                            <input id="myFilter" class="form-control" type="text" placeholder="*.*;*" aria-label="filter"
-                                   data-toggle="tooltip" data-placement="bottom" title="Add ;* to the end for ALL versions">
+
+                        <div class="col-auto ps-3 pe-1">
+                            <label for="goto" class="col-form-label">Goto</label>
                         </div>
-                        <div>
-                            <button id="saveBtn" class="mr-auto btn btn-outline-secondary" data-toggle="tooltip" data-placement="bottom" title="Prompts to save the current tab if modified">Save</button>
+                        <div class="col pe-5">
+                            <div class="dropdown input-group col-12">
+                                <input id="goto" class="form-control" type="text" data-bs-toggle="dropdown" />
+                                <ul id="gotos" class="dropdown-menu">
+                                </ul>
+                                <button class="btn btn-outline-secondary" type="button" id="btn-goto">Go</button>
+                            </div>
                         </div>
+
+                        <div class="btn-group">
+                            <button type="button" id="saveBtn" class="btn btn-primary"  data-bs-display="static">Save</button>
+                            <button type="button" class="btn  btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="visually-hidden">Toggle Dropdown</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a id="saveAsBtn" class="dropdown-item" href="#">Save As</a></li>
+                                <li><a id="newBtn" class="dropdown-item" href="#">New</a></li>
+                            </ul>
+                        </div>
+
+
+
                     </div>
-                </nav>
+                </div>
+            </nav>
+
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-12">
+        <div class="row g-1" style="height: 30px;">
+            <div class="col col-auto ps-3 py-0">
+                    Breadcrumb:
+            </div>
+            <div class="col">
                 <nav aria-label="breadcrumb">
                     <ol id="myBreadCrumb" class="breadcrumb">
                     </ol>
@@ -554,43 +934,10 @@
             </div>
         </div>
     </div>
-    <div id="myModal" class="modal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Remove Tab</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p>Do you want to save your changes first?</p>
-                </div>
-                <div class="modal-footer">
-                    <button id="btnModalYes" type="button" class="btn btn-primary">Yes</button>
-                    <button id="btnModalNo" type="button" class="btn btn-secondary">No</button>
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div id="saveModal" class="modal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Save Changes</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p>Do you want to save your Changes?</p>
-                </div>
-                <div class="modal-footer">
-                    <button id="btnSaveModalYes" type="button" class="btn btn-primary">Yes</button>
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="dropdown-menu" id="sharedPopupMenu">
+    <a class="dropdown-item" id="popupEdit" href="#">Edit</a>
+    <a class="dropdown-item" id="popupCopy" href="#">Copy</a>
+    <a class="dropdown-item" id="popupRename" href="#">Rename</a>
+    <a class="dropdown-item" id="popupDelete" href="#">Delete</a>
+</div>

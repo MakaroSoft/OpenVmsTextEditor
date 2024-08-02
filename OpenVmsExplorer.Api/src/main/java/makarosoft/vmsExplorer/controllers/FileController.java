@@ -73,14 +73,14 @@ public class FileController extends ApiController {
 		
 		
 		// when getting a file, there will always be at least one slash
-		String fullNameFormatted = FileFormatter.IsVmsFile(fullName) ? FileFormatter.toVmsFileFormat(fullName) : FileFormatter.toWindowsFileFormat(fullName);
+		boolean isVms = FileFormatter.IsVmsFile(fullName);
+		
+		String fullNameFormatted = isVms ? FileFormatter.toVmsFileFormat(fullName) : FileFormatter.toWindowsFileFormat(fullName);
 		_logger.debug("File to save: {}", fullNameFormatted);
 
-		boolean isVms = false;
 		int version = 0;
 		int index = fullNameFormatted.indexOf(";");
 		if (index != -1) {
-			isVms = true;
 			version = Integer.parseInt(fullNameFormatted.substring(index + 1));
 			fullNameFormatted = fullNameFormatted.substring(0, index);
 		}
@@ -99,13 +99,14 @@ public class FileController extends ApiController {
 		fos.close();
 		
 		// a vms thing
-		if (version != 0) {
+		if (isVms) {
 			index = fullNameFormatted.indexOf("]");
 			String path = fullNameFormatted.substring(0, index + 1);
 			String fileName = fullNameFormatted.substring(index + 1);
 			_logger.debug("Path = {}, filename = {}", path, fileName);
 			
-			VmsFilenameFilter filenameFilter = new VmsFilenameFilter(fileName + ";", true);
+			// (include, exclude, showHistory=false, ignoreDirectories = true)
+			VmsFilenameFilter filenameFilter = new VmsFilenameFilter(fileName + ";", "", false, true);
 			
 			File theFolder = new File(path);
 					

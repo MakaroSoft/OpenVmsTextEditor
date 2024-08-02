@@ -8,7 +8,7 @@ namespace OpenVmsTextEditor.Domain.Services;
 
 public interface IPageInfoService
 {
-    Task<VmsEditorModel> GetPageInfo(string filter, string path);
+    Task<VmsEditorModel> GetPageInfo(string? include, string? exclude, bool showHistory, string path);
 }
 
 public class PageInfoService : IPageInfoService
@@ -22,16 +22,16 @@ public class PageInfoService : IPageInfoService
         _operatingSystemIo = operatingSystemIo;
     }
 
-    public async Task<VmsEditorModel> GetPageInfo(string filter, string path)
+    public async Task<VmsEditorModel> GetPageInfo(string? include, string? exclude, bool showHistory, string path)
     {
-        _logger.LogDebug("GetFolder(filter={filter},path={path})", filter, path);
+        _logger.LogDebug("GetFolder(include={include}, exclude={exclude}, showHistory={showHistory}, path={path})", include, exclude, showHistory, path);
 
         var disks = await _operatingSystemIo.GetDisks();
 
         var startingDirectory = path ?? disks[0];
         var breadCrumb = startingDirectory.Split("/").ToList();
 
-        var files = await _operatingSystemIo.GetDirectoryFiles(filter, startingDirectory);
+        var files = await _operatingSystemIo.GetDirectoryFiles(include, exclude, showHistory, startingDirectory);
 
         var model = new VmsEditorModel
         {

@@ -24,11 +24,11 @@ public class VmsDirectory implements IDirectory {
 	}
 
 	@Override
-	public List<makarosoft.vmsExplorer.models.File> getFiles(String filter) {
+	public List<makarosoft.vmsExplorer.models.File> getFiles(String include, String exclude, boolean showHistory) {
 		String folder = FileFormatter.toVmsFolderFormat(_folder);
 		
-		_logger.debug("Filter = {}", filter);
-		VmsFilenameFilter filenameFilter = new VmsFilenameFilter(filter);
+		_logger.debug("include = {}, exclude = {}, showHistory = {}", include, exclude, showHistory);
+		VmsFilenameFilter filenameFilter = new VmsFilenameFilter(include, exclude, showHistory);
 		_logger.debug("attempting to get folder content for: {}", folder);
 		
 		File theFolder = new File(folder);

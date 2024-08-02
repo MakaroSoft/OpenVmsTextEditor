@@ -33,9 +33,9 @@ public class WindowsIo : IOperatingSystemIo
         return diskName.Substring(0, index);
     }
 
-    public async Task<IList<File>> GetDirectoryFiles(string filter, string fullFolderName)
+    public async Task<IList<File>> GetDirectoryFiles(string? include, string? exclude, bool showHistory, string fullFolderName)
     {
-        _logger.LogDebug("GetDirectoryFiles(filter = {filter}, fullFolderName = {fullFolderName})", filter, fullFolderName);
+        _logger.LogDebug("GetDirectoryFiles(include = {include}, exclude={exclude}, showHistory={showHistory}, fullFolderName = {fullFolderName})", include, exclude, showHistory, fullFolderName);
         fullFolderName = FileFormatter.ToWindowsFolderFormat(fullFolderName);
 
         var dirs = Directory.GetDirectories(fullFolderName).Select(x => (File)new File
@@ -44,15 +44,44 @@ public class WindowsIo : IOperatingSystemIo
             Dir = true
         }).ToList();
 
-        var files = Directory.GetFiles(fullFolderName).Select(x => (File)new File
+        string[] allFiles = Directory.GetFiles(fullFolderName);
+        if (!string.IsNullOrWhiteSpace(exclude))
+        {
+            string[] patternsToExclude = exclude.Split(',');
+
+            allFiles = allFiles
+                        .Where(file => !patternsToExclude.Any(pattern => MatchesPattern(file, pattern)))
+                        .ToArray();
+        }
+
+        if (!string.IsNullOrWhiteSpace(include))
+        {
+            string[] patternsToInclude = include.Split(',');
+
+            allFiles = allFiles
+                        .Where(file => patternsToInclude.Any(pattern => MatchesPattern(file, pattern)))
+                        .ToArray();
+        }
+
+        var files = allFiles.Select(x => new File
         {
             Name = Path.GetFileName(x)
         }).ToList();
+
 
         var filesAndFolders = dirs;
         dirs.AddRange(files);
 
         return await Task.Run(() => filesAndFolders);
+    }
+
+    private bool MatchesPattern(string filePath, string pattern)
+    {
+        string fileName = Path.GetFileName(filePath);
+        string regexPattern = "^" + System.Text.RegularExpressions.Regex.Escape(pattern)
+            .Replace("\\*", ".*")
+            .Replace("\\?", ".") + "$";
+        return System.Text.RegularExpressions.Regex.IsMatch(fileName, regexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
     }
 
     public async Task<string> GetFile(string fullFileName)
@@ -62,9 +91,14 @@ public class WindowsIo : IOperatingSystemIo
         return await System.IO.File.ReadAllTextAsync(fullFileName);
     }
 
-    public Task<string> SaveFile(string fullFileName, string fileData)
+    public async Task<string> SaveFile(string fullFileName, string fileData)
     {
-        throw new NotImplementedException();
+        _logger.LogDebug("SaveFile(fullFileName = {fullFileName})", fullFileName);
+        await Task.CompletedTask;
+
+        var filename = Path.GetFileName(fullFileName);
+
+        return filename;
     }
 }
 

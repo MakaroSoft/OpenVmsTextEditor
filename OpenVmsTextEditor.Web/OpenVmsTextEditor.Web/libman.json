@@ -3,22 +3,14 @@
   "defaultProvider": "cdnjs",
   "libraries": [
     {
-      "provider": "cdnjs",
-      "library": "bootstrap@4.6.2",
-      "destination": "wwwroot/lib/bootstrap/"
-    },
-    {
-      "provider": "cdnjs",
       "library": "jquery@3.7.1",
       "destination": "wwwroot/lib/jquery/"
     },
     {
-      "provider": "cdnjs",
       "library": "split.js@1.6.5",
       "destination": "wwwroot/lib/split.js/"
     },
     {
-      "provider": "cdnjs",
       "library": "jsviews@1.0.13",
       "destination": "wwwroot/lib/jsviews/"
     },
@@ -30,6 +22,14 @@
         "dist/loadingoverlay.js",
         "dist/loadingoverlay.min.js",
         "dist/loadingoverlay.min.js.map"
+      ]
+    },
+    {
+      "library": "bootstrap@5.3.3",
+      "destination": "wwwroot/lib/bootstrap/",
+      "files": [
+        "js/bootstrap.bundle.min.js",
+        "css/bootstrap.min.css"
       ]
     }
   ]

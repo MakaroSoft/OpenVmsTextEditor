@@ -20,17 +20,20 @@ public class HomeController : Controller
         _pageInfoService = pageInfoService;
     }
 
-    public async Task<IActionResult> Index(string filter, string startPath)
+    public async Task<IActionResult> Index(string? include, string? exclude, bool showHistory, string startPath)
     {
-        _logger.LogDebug("Index(filter={filter},startPath={path})", filter, startPath);
-        return View(await _pageInfoService.GetPageInfo(filter, startPath));
+        _logger.LogDebug("Index(include={include}, exclude={exclude}, showHistory={showHistory}, startPath={path})", include, exclude, showHistory, startPath);
+        ViewBag.ShowHistory = showHistory == true? "Checked" : "";
+        ViewBag.Include = include ?? "";
+        ViewBag.Exclude = exclude ?? "";
+        return View(await _pageInfoService.GetPageInfo(include, exclude, showHistory, startPath));
     }
 
     [HttpPost("GetFolder")]
-    public async Task<IActionResult> GetFolder(string filter, string path)
+    public async Task<IActionResult> GetFolder(string? include, string? exclude, bool showHistory, string path)
     {
-        _logger.LogDebug("GetFolder(filter={filter},path={path})", filter, path);
-        return Ok(await _pageInfoService.GetPageInfo(filter, path));
+        _logger.LogDebug("GetFolder(include={include}, exclude={exclude}, showHistory={showHistory}, startPath={path})", include, exclude, showHistory, path);
+        return Ok(await _pageInfoService.GetPageInfo(include, exclude, showHistory, path));
     }
 
     [HttpPost("GetFile")]
