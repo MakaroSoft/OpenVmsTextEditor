@@ -91,9 +91,14 @@ public class WindowsIo : IOperatingSystemIo
         return await System.IO.File.ReadAllTextAsync(fullFileName);
     }
 
-    public Task<string> SaveFile(string fullFileName, string fileData)
+    public async Task<string> SaveFile(string fullFileName, string fileData)
     {
-        throw new NotImplementedException();
+        _logger.LogDebug("SaveFile(fullFileName = {fullFileName})", fullFileName);
+        await Task.CompletedTask;
+
+        var filename = Path.GetFileName(fullFileName);
+
+        return filename;
     }
 }
 

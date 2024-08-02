@@ -117,7 +117,7 @@
         <ul id="myTabs" class="nav nav-tabs">
             {^{for Tabs}}
             <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="tab" href="#{{:TabId}}">{^{modCode:Modified}}{^{:Name}} <i class="aCloseButton far fa-window-close"></i></a>
+                <a class="nav-link" id="{{:TabId}}-tab" data-bs-toggle="tab" data-bs-target="#{{:TabId}}">{^{modCode:Modified}}{^{:Name}} <i class="aCloseButton far fa-window-close"></i></a>
             </li>
             {{/for}}
         </ul>
@@ -148,7 +148,7 @@
                 if (index !== -1) {
                     return `nameNoVer='${text.substring(0, index)}'`;
                 }
-                return "";
+                    return `nameNoVer='${text}'`;
             });
 
         const GUTTER_SIZE = 20;
@@ -156,6 +156,8 @@
         var currentTabIndex = 0;
         var currentTabData = null;
         var _$fileTd = null
+        var _notification = new MakaroSoft.CommonNotification();
+        var _dialog = new MakaroSoft.CommonDialog( { required: true });
 
         var includeValue = "@ViewBag.Include";
         var excludeValue = "@ViewBag.Exclude";
@@ -238,28 +240,109 @@
                 var dataItem = $.view(this).data;
                 var index = $.view(this).index;
                 if (dataItem.Modified) {
-                    var modal = $('#myModal');
-                    modal.attr('data-index', index);
-                    modal.find('.modal-title').text(`Remove Tab For ${dataItem.Name}`);
-                    modal.modal('show');
+                    if (dataItem.Name === "New!") {
+                        removeTabNew(index, dataItem);
+                    } else {
+                        removeTabExisting(index, dataItem);
+                    }
                 } else {
                     removeTab(index);
                 }
             });
 
+        function removeTabExisting(index, dataItem) {
+            _dialog.show(`Remove Tab For ${dataItem.Name}`, "Do you want to save your changes first?", ["Yes","No","Cancel"], function(e) {
+                _dialog.close();
+                if (e === "Yes") {
+                    saveTab(index); // TODO async!!
+                    removeTab(index);
+                }
+                if (e === "No") {
+                    removeTab(index);
+                }
+            });
+        }
+
+            function removeTabNew(index, dataItem) {
+                _dialog.show(`Remove Tab For ${dataItem.Name}`, "Enter the file name to save as <input id='btnRemoveNewTab' class='form-control' placeHolder='filename.filetype' type='text'></input>", ["Save","Remove","Cancel"], function(e) {
+                if (e === "Save") {
+                    var filename = $("#btnRemoveNewTab").val();
+                    if (filename === "" || filename === "New!") {
+                        _notification.show("Invalid file name","error");
+                        return;
+                    }
+                    _dialog.close();
+
+                    //filename += ";1";
+
+                    // setup the new file name
+                    var tabData = tabsObject.Tabs[index];
+                    $.observable(tabData).setProperty("Name", filename);
+                    $.observable(tabData).setProperty("FullName", `${tabData.Path}/${filename}`);
+
+                    saveTab(index); // TODO async!!
+                    removeTab(index);
+                }
+                if (e === "Remove") {
+                    _dialog.close();
+                    removeTab(index);
+                }
+                if (e === "Cancel") {
+                    _dialog.close();
+                }
+            });
+        }
+
         $("#saveBtn").click(function() {
             if (!currentTabData.Modified) return;
-            var modal = $('#saveModal');
-            modal.attr('data-index', currentTabIndex);
-            modal.find('.modal-title').text(`Save Changes To ${currentTabData.Name}`);
-            modal.modal('show');
+
+            if (currentTabData.Name === "New!") {
+                doSaveAs();
+                return;
+            }
+            _dialog.show("Save Changes", "Do you want to save your changes?", ["Yes","Cancel"], function(e) {
+                _dialog.close();
+                if (e == "Yes") {
+                    saveTab(currentTabIndex);
+                }
+            });
+
+
         });
         $("#saveAsBtn").click(function () {
-            alert("SaveAs not implemented yet");
+            doSaveAs();
         });
+
         $("#newBtn").click(function () {
-            alert("New not implemented yet");
+                addNewFile("New!");
         });
+
+        function doSaveAs() {
+            if (!currentTabData.Modified) return;
+            _dialog.show("Save As", "Enter the file name to save as <input id='btnDoSaveFileName' class='form-control' placeHolder='filename.filetype' type='text'></input>", ["Save","Cancel"], 
+            function(e) {
+                if (e == "Save") {
+                    var filename = $("#btnDoSaveFileName").val();
+                    if (filename === "" || filename === "New!") {
+                        _notification.show("Invalid file name","error");
+                        return;
+                    }
+                    _dialog.close();
+
+                    //filename += ";1";
+                    // setup the new file name
+                    var tabData = tabsObject.Tabs[currentTabIndex];
+
+                    $.observable(tabData).setProperty("Name", filename);
+                    $.observable(tabData).setProperty("FullName", `${tabData.Path}/${filename}`);
+
+                    saveTab(currentTabIndex); // TODO async!!
+                }
+                if (e == "Cancel") {
+                    _dialog.close();
+                }
+            });
+        }
 
         function removeTab(index) {
             if (index === currentTabIndex) {
@@ -352,38 +435,6 @@
 
 
         //--------------------------------------------------------
-        function hideMyModal() {
-            var myModal = $('#myModal');
-            var index = parseInt(myModal.attr('data-index'));
-            myModal.modal('hide');
-            return index;
-        }
-
-        $("#btnModalNo").click(function() {
-            var index = hideMyModal();
-            removeTab(index);
-        });
-
-        $("#btnModalYes").click(function() {
-            var index = hideMyModal();
-            saveTab(index); // TODO async!!
-            removeTab(index);
-        });
-
-        //--------------------------------------------------------
-        function hideSaveModal() {
-            var modal = $('#saveModal');
-            var index = parseInt(modal.attr('data-index'));
-            modal.modal('hide');
-            return index;
-        }
-
-        $("#btnSaveModalYes").click(function() {
-            var index = hideSaveModal();
-            saveTab(index);
-        });
-
-        //--------------------------------------------------------
 
         function saveTab(index) {
             var tabData = tabsObject.Tabs[index];
@@ -404,6 +455,8 @@
         function addFile(file) {
             var fullName = `${breadCrumb.join("/")}/${file}`;
 
+            if (isOpenAlready(fullName)) return;
+
             var tabData = {
                 "Path": breadCrumb.join("/"),
                 "Name": file,
@@ -411,6 +464,7 @@
                 "TabId": `tab${tabCount}`,
                 "Modified": false
             }
+
             tabCount++;
 
             $.observable(tabsObject.Tabs).insert(tabData);
@@ -419,6 +473,27 @@
             insertedTab.tab('show');
 
             loadFile(fullName, tabData);
+        };
+
+        function addNewFile(file) {
+            var fullName = `${breadCrumb.join("/")}/${file}`;
+
+            var tabData = {
+                "Path": breadCrumb.join("/"),
+                "Name": file,
+                "FullName": fullName,
+                "TabId": `tab${tabCount}`,
+                "Modified": true
+            }
+
+            tabCount++;
+
+            $.observable(tabsObject.Tabs).insert(tabData);
+
+            var insertedTab = $('#myTabs a:last');
+            insertedTab.tab('show');
+            tabData.View = openVmsEditor.load("", "#" + tabData.TabId + " div");
+
         };
 
         const gutterStyle = dimension => ({
@@ -439,6 +514,24 @@
         window.onbeforeunload = function() {
             return true;
         };
+
+        function isOpenAlready(fullName) {
+            var found = false;
+            var tabId = "";
+            $.each(tabsObject.Tabs, function(index, obj) {
+                if (obj.FullName === fullName) {
+                    found = true;
+                    tabId = obj.TabId;
+                    return false;
+                }
+            });
+            if (found) {
+                _notification.show("This file is already open","info", 4000);
+                $("#" + tabId + "-tab").tab("show");
+                return true;
+            }
+            return false;
+        }
 
         function equalIgnoreCase(a, b) {
             return a.localeCompare(b, undefined, { sensitivity: 'accent' }) === 0;
@@ -480,7 +573,16 @@
                                 var selector = $(`#myFiles span[nameNoVer='${fileNameNoVers}'`).first();
                                 var tr = selector.closest('tr');
                                 var testHtml = fileTemplate.render(tabData);
-                                tr.before(testHtml);
+                                if (tr.length === 0) {
+                                    $("#myFiles").append(testHtml);
+                                    return;
+                                }
+                                var showHistory = $("#showHistory").is(':checked');
+                                if (showHistory) {
+                                    tr.before(testHtml);
+                                } else {
+                                    tr.replaceWith(testHtml);
+                                }
                             }
                         } else {
                             alert("err");
@@ -601,7 +703,7 @@
 
 
 
-            <nav class="navbar navbar-expand-lg bg-body-secondary">
+            <nav class="navbar navbar-expand-lg bg-dark-subtle ">
                 <div class="container-fluid">
                     <a class="navbar-brand" href="#">OpenVMS Text Editor</a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -653,8 +755,21 @@
                                 </div>
                             </li>
 
-
-
+                            <li class="nav-item ps-3" style="width:600px;">
+                                <div class="row g-1 align-items-center">
+                                    <div class="col-auto">
+                                        <label for="goto" class="col-form-label">Goto</label>
+                                    </div>
+                                    <div class="col">
+                                        <div class="dropdown input-group">
+                                            <input id="goto" class="form-control" type="text" data-bs-toggle="dropdown" />
+                                            <ul id="gotos" class="dropdown-menu">
+                                            </ul>
+                                            <button class="btn btn-outline-secondary" type="button" id="button-goto">Go</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
                         </ul>
 
 
@@ -716,44 +831,7 @@
             </div>
         </div>
     </div>
-    <div id="myModal" class="modal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Remove Tab</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p>Do you want to save your changes first?</p>
-                </div>
-                <div class="modal-footer">
-                    <button id="btnModalYes" type="button" class="btn btn-primary">Yes</button>
-                    <button id="btnModalNo" type="button" class="btn btn-secondary">No</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div id="saveModal" class="modal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Save Changes</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p>Do you want to save your Changes?</p>
-                </div>
-                <div class="modal-footer">
-                    <button id="btnSaveModalYes" type="button" class="btn btn-primary">Yes</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
 <div class="dropdown-menu" id="sharedPopupMenu">
     <a class="dropdown-item" id="popupEdit" href="#">Edit</a>
     <a class="dropdown-item" id="popupCopy" href="#">Copy</a>
