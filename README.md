@@ -1,5 +1,5 @@
 # OpenVmsTextEditor
-A browser-based OpenVMS text editor with a DecBASIC language parser written in NET6 and Node.JS. Also, a Restful API Service that runs on an OpenVMS server using Java8.
+A browser-based OpenVMS text editor with a DecBASIC language parser written in NET8 and Node.JS. Also, a Restful API Service that runs on an OpenVMS server using Java8.
 
 > [!WARNING]
 > This version is __beta__ and does not have authentication, so if you run it, make sure it runs behind a firewall. 
