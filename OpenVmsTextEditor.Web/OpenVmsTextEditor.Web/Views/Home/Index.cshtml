@@ -81,6 +81,12 @@
         {{/for}}
     </script>
 
+    <script id="recentsTemplate" type="text/x-jsrender">
+        {{for #data}}
+        <li><a class="dropdown-item aGoto" href="#">{{:Name}}</a></li>
+        {{/for}}
+    </script>
+
     <script id="folderTemplate" type="text/x-jsrender">
         {{for #data}}
         <tr class="aRow">
@@ -161,9 +167,23 @@
 
         var includeValue = "@ViewBag.Include";
         var excludeValue = "@ViewBag.Exclude";
+        var gotoValue = "";
 
         var disks = @Html.Raw(JsonSerializer.Serialize(Model.Disks));
         var files = @Html.Raw(JsonSerializer.Serialize(Model.Files));
+        var _recents = [];
+
+        disks.contains = function (name) {
+            return this.some(function (diskName) {
+                return diskName.toLowerCase() === name.toLowerCase();
+            });
+        };
+        _recents.contains = function (newObject) {
+            return this.some(function (obj) {
+                return obj.Name === newObject.Name;
+            });
+        };
+
         var breadCrumb = @Html.Raw(JsonSerializer.Serialize(Model.BreadCrumb));
         var tabsObject = {
             "Tabs": tabs = []
@@ -178,6 +198,10 @@
         var htmlOutput = folderTemplate.render(files);
         $("#myFiles").html(htmlOutput);
 
+        var recentsTemplate = $.templates("#recentsTemplate");
+        htmlOutput = recentsTemplate.render(_recents);
+        $("#gotos").html(htmlOutput);
+
         var breadCrumbTemplate = $.templates("#breadCrumbTemplate");
         breadCrumbTemplate.link("#myBreadCrumb", breadCrumb);
 
@@ -186,6 +210,8 @@
 
         var $include = $("#include");
         var $exclude = $("#exclude");
+        var $goto = $("#goto");
+        var $btnGoto = $("#btn-goto");
         var $showHistory = $("#showHistory")
 
         $include.on('blur',
@@ -227,10 +253,61 @@
                     }
                 }
             });
+
+
+
+
+
+        $goto.on('blur',
+            function () {
+                if ($goto.val() !== gotoValue) {
+                    gotoValue = $goto.val();
+                    handleGoto(gotoValue);
+                }
+            });
+
+        $goto.on('keyup',
+            function (e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    gotoValue = $goto.val();
+                    handleGoto(gotoValue);
+                }
+            });
+
+        $btnGoto.click(function () {
+            gotoValue = $goto.val();
+            handleGoto(gotoValue);
+        });
+
+        function isDisk(possibleDisk) {
+            return disks.contains(possibleDisk);
+            return false;
+        }
+
+        function handleGoto(folder) {
+            if (folder === "") return;
+
+            if (folder.startsWith("/")) {
+                // tack on the current drive name
+                folder = breadCrumb[0] + folder;
+            } else {
+                var folderParts = folder.split("/");
+                if (folderParts.length === 0) return;
+                var possibleDisk = folderParts[0];
+                if (!isDisk(possibleDisk)) {
+                    var fullPath = breadCrumb.join("/");
+                    folder = fullPath + "/" + folder;
+                }
+            }
+
+            // todo handle different goto folder scenarios
+            changeFolder(folder);
+        }
+
         $showHistory.on('change',
             function () {
-                var fullName = breadCrumb.join("/");
-                changeFolder(fullName);
+                var fullPath = breadCrumb.join("/");
+                changeFolder(fullPath);
             });
 
         $("#myTabs").on("click",
@@ -380,6 +457,12 @@
                 var fullName = breadCrumb.slice(0, index + 1).join("/");
                 changeFolder(fullName);
             });
+        $("#gotos").on("click",
+            ".aGoto",
+            function (event) {
+                var fullName = $(this).text();
+                changeFolder(fullName);
+            });
 
         $("#myFiles").on("click",
             ".aRow",
@@ -452,8 +535,33 @@
             changeFolder(fullName);
         };
 
+        function addRecent(folder) {
+            var newObject = { Name: folder }
+            if (_recents.contains(newObject)) return;
+
+            _recents.push(newObject);
+
+
+            _recents.sort(function (a, b) {
+                var nameA = a.Name.toLowerCase();
+                var nameB = b.Name.toLowerCase();
+                if (nameA < nameB) {
+                    return -1;
+                }
+                if (nameA > nameB) {
+                    return 1;
+                }
+                return 0;
+            });
+
+            var htmlOutput = recentsTemplate.render(_recents);
+            $("#gotos").html(htmlOutput);
+            //alert(folder);
+        };
+
         function addFile(file) {
             var fullName = `${breadCrumb.join("/")}/${file}`;
+            addRecent(`${breadCrumb.join("/")}`)
 
             if (isOpenAlready(fullName)) return;
 
@@ -591,7 +699,6 @@
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         hideLoading("#two");
-                        alert("wth?");
                         alert("response:" + xhr.responseText);
                     }
                 });
@@ -619,7 +726,6 @@
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         hideLoading("#two");
-                        alert("wth?");
                         alert("response:" + xhr.responseText);
                     }
                 });
@@ -666,19 +772,20 @@
                             var htmlOutput = folderTemplate.render(files);
                             $("#myFiles").html(htmlOutput);
                         } else {
-                            alert("err");
-                            alert(xhr.responseText);
+                            console.log(xhr.responseText);
+                            _notification.show("Goto folder was not found: " + folder, "error");
                         }
                     },
                     error: function(xhr, ajaxOptions, thrownError) {
                         hideLoading("#one");
-                        alert("wth?");
-                        alert("response:" + xhr.responseText);
+                        console.log(xhr.responseText);
+                        _notification.show("Goto folder was not found: " + folder, "error");
                     }
                 });
             } catch (exception) {
                 hideLoading("#one");
-                alert(exception);
+                console.log(exception);
+                _notification.show("Goto folder was not found: " + folder, "error");
             }
         }
 
@@ -765,7 +872,7 @@
                                             <input id="goto" class="form-control" type="text" data-bs-toggle="dropdown" />
                                             <ul id="gotos" class="dropdown-menu">
                                             </ul>
-                                            <button class="btn btn-outline-secondary" type="button" id="button-goto">Go</button>
+                                            <button class="btn btn-outline-secondary" type="button" id="btn-goto">Go</button>
                                         </div>
                                     </div>
                                 </div>
