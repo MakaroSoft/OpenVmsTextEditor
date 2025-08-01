@@ -138,7 +138,6 @@
     </script>
 
 
-
     <script>
         $.views.converters("modCode",
             function(val) {
@@ -150,28 +149,30 @@
 
         $.views.converters("noVer",
             function(text) {
-                var index = text.indexOf(";");
+                const index = text.indexOf(";");
                 if (index !== -1) {
                     return `nameNoVer='${text.substring(0, index)}'`;
                 }
                     return `nameNoVer='${text}'`;
             });
 
+        let _fileName = null;
         const GUTTER_SIZE = 20;
-        var tabCount = 1;
-        var currentTabIndex = 0;
-        var currentTabData = null;
-        var _$fileTd = null
-        var _notification = new MakaroSoft.CommonNotification();
-        var _dialog = new MakaroSoft.CommonDialog( { required: true });
+        let _compareFirst = null;
+        let tabCount = 1;
+        let currentTabIndex = 0;
+        let currentTabData = null;
+        let _$fileTd = null
+        const _notification = new MakaroSoft.CommonNotification();
+        const _dialog = new MakaroSoft.CommonDialog( { required: true });
 
-        var includeValue = "@ViewBag.Include";
-        var excludeValue = "@ViewBag.Exclude";
-        var gotoValue = "";
+        let includeValue = "@ViewBag.Include";
+        let excludeValue = "@ViewBag.Exclude";
+        let gotoValue = "";
 
-        var disks = @Html.Raw(JsonSerializer.Serialize(Model.Disks));
-        var files = @Html.Raw(JsonSerializer.Serialize(Model.Files));
-        var _recents = [];
+        const disks = @Html.Raw(JsonSerializer.Serialize(Model.Disks));
+        let files = @Html.Raw(JsonSerializer.Serialize(Model.Files));
+        const _recents = [];
 
         disks.contains = function (name) {
             return this.some(function (diskName) {
@@ -184,41 +185,53 @@
             });
         };
 
-        var breadCrumb = @Html.Raw(JsonSerializer.Serialize(Model.BreadCrumb));
-        var tabsObject = {
-            "Tabs": tabs = []
+        const basePath = window.location.pathname.split('/')[1];
+
+        const breadCrumb = @Html.Raw(JsonSerializer.Serialize(Model.BreadCrumb));
+        
+        const tabsObject = {
+            "Tabs": [],
+            "RecentOrder": []
         };
 
-        var fileTemplate = $.templates("#fileTemplate");
+        const fileTemplate = $.templates("#fileTemplate");
 
-        var diskTemplate = $.templates("#diskTemplate");
+        const diskTemplate = $.templates("#diskTemplate");
         diskTemplate.link("#myDisks", disks);
 
-        var folderTemplate = $.templates("#folderTemplate");
-        var htmlOutput = folderTemplate.render(files);
-        $("#myFiles").html(htmlOutput);
+        const folderTemplate = $.templates("#folderTemplate");
+        let htmlOutput = folderTemplate.render(files);
+        
+        const $myFiles = $("#myFiles");
+        $myFiles.html(htmlOutput);
 
-        var recentsTemplate = $.templates("#recentsTemplate");
+        const recentsTemplate = $.templates("#recentsTemplate");
         htmlOutput = recentsTemplate.render(_recents);
-        $("#gotos").html(htmlOutput);
 
-        var breadCrumbTemplate = $.templates("#breadCrumbTemplate");
+        const $gotos = $("#gotos");
+        $gotos.html(htmlOutput);
+
+        const breadCrumbTemplate = $.templates("#breadCrumbTemplate");
         breadCrumbTemplate.link("#myBreadCrumb", breadCrumb);
 
-        var tabTemplate = $.templates("#tabTemplate");
+        const tabTemplate = $.templates("#tabTemplate");
         tabTemplate.link("#myTabArea", tabsObject);
 
-        var $include = $("#include");
-        var $exclude = $("#exclude");
-        var $goto = $("#goto");
-        var $btnGoto = $("#btn-goto");
-        var $showHistory = $("#showHistory")
+        const $popupCompareTo = $("#popupCompareTo");
+        const $compareBtn = $("#compareBtn");
+        const $compareUnsavedBtn = $("#compareUnsavedBtn");
+        const $myTabs = $("#myTabs");
+        const $include = $("#include");
+        const $exclude = $("#exclude");
+        const $goto = $("#goto");
+        const $btnGoto = $("#btn-goto");
+        const $showHistory = $("#showHistory");
 
         $include.on('blur',
             function () {
                 if ($include.val() !== includeValue) {
                     includeValue = $include.val();
-                    var fullName = breadCrumb.join("/");
+                    const fullName = breadCrumb.join("/");
                     changeFolder(fullName);
                 }
             });
@@ -228,7 +241,7 @@
                 if (e.key === 'Enter' || e.keyCode === 13) {
                     if ($include.val() !== includeValue) {
                         includeValue = $include.val();
-                        var fullName = breadCrumb.join("/");
+                        const fullName = breadCrumb.join("/");
                         changeFolder(fullName);
                     }
                 }
@@ -238,7 +251,7 @@
             function () {
                 if ($exclude.val() !== excludeValue) {
                     excludeValue = $exclude.val();
-                    var fullName = breadCrumb.join("/");
+                    const fullName = breadCrumb.join("/");
                     changeFolder(fullName);
                 }
             });
@@ -248,7 +261,7 @@
                 if (e.key === 'Enter' || e.keyCode === 13) {
                     if ($exclude.val() !== excludeValue) {
                         excludeValue = $exclude.val();
-                        var fullName = breadCrumb.join("/");
+                        const fullName = breadCrumb.join("/");
                         changeFolder(fullName);
                     }
                 }
@@ -281,7 +294,6 @@
 
         function isDisk(possibleDisk) {
             return disks.contains(possibleDisk);
-            return false;
         }
 
         function handleGoto(folder) {
@@ -291,11 +303,11 @@
                 // tack on the current drive name
                 folder = breadCrumb[0] + folder;
             } else {
-                var folderParts = folder.split("/");
+                const folderParts = folder.split("/");
                 if (folderParts.length === 0) return;
-                var possibleDisk = folderParts[0];
+                const possibleDisk = folderParts[0];
                 if (!isDisk(possibleDisk)) {
-                    var fullPath = breadCrumb.join("/");
+                    const fullPath = breadCrumb.join("/");
                     folder = fullPath + "/" + folder;
                 }
             }
@@ -306,16 +318,16 @@
 
         $showHistory.on('change',
             function () {
-                var fullPath = breadCrumb.join("/");
+                const fullPath = breadCrumb.join("/");
                 changeFolder(fullPath);
             });
 
-        $("#myTabs").on("click",
+        $myTabs.on("click",
             ".aCloseButton",
             function(event) {
                 event.stopPropagation();
-                var dataItem = $.view(this).data;
-                var index = $.view(this).index;
+                const dataItem = $.view(this).data;
+                const index = $.view(this).index;
                 if (dataItem.Modified) {
                     if (dataItem.Name === "New!") {
                         removeTabNew(index, dataItem);
@@ -341,9 +353,9 @@
         }
 
             function removeTabNew(index, dataItem) {
-                _dialog.show(`Remove Tab For ${dataItem.Name}`, "Enter the file name to save as <input id='btnRemoveNewTab' class='form-control' placeHolder='filename.filetype' type='text'></input>", ["Save","Remove","Cancel"], function(e) {
+                _dialog.show(`Remove Tab For ${dataItem.Name}`, "Enter the file name to save as <input id='btnRemoveNewTab' class='form-control' placeHolder='filename.filetype' type='text'/>", ["Save","Remove","Cancel"], function(e) {
                 if (e === "Save") {
-                    var filename = $("#btnRemoveNewTab").val();
+                    const filename = $("#btnRemoveNewTab").val();
                     if (filename === "" || filename === "New!") {
                         _notification.show("Invalid file name","error");
                         return;
@@ -352,8 +364,8 @@
 
                     //filename += ";1";
 
-                    // setup the new file name
-                    var tabData = tabsObject.Tabs[index];
+                    // set up the new file name
+                    const tabData = tabsObject.Tabs[index];
                     $.observable(tabData).setProperty("Name", filename);
                     $.observable(tabData).setProperty("FullName", `${tabData.Path}/${filename}`);
 
@@ -377,10 +389,13 @@
                 doSaveAs();
                 return;
             }
-            _dialog.show("Save Changes", "Do you want to save your changes?", ["Yes","Cancel"], function(e) {
+            _dialog.show("Save Changes", "Do you want to save your changes?", ["Yes", "Compare", "Cancel"], async function(e) {
                 _dialog.close();
-                if (e == "Yes") {
+                if (e === "Yes") {
                     saveTab(currentTabIndex);
+                }
+                if (e === "Compare") {
+                    await DoCompareUnsavedAsync();
                 }
             });
 
@@ -390,16 +405,52 @@
             doSaveAs();
         });
 
+        $compareBtn.click(async function () {
+            try {
+                const lastTwo = tabsObject.RecentOrder.slice(-2);
+
+                const index1 = findTabIndex(lastTwo[0]);
+                const index2 = findTabIndex(lastTwo[1]);
+                const tabData1 = tabsObject.Tabs[index1];
+                const tabData2 = tabsObject.Tabs[index2];
+
+                const content1 = tabData1.View.state.doc.toString();
+                const content2 = tabData2.View.state.doc.toString();
+                await compareRecentAsync(tabData1.FullName, tabData2.FullName, content1, content2);
+                
+            } catch (err) {
+                alert('Error comparing recent tabs: ' + err.message);
+            }
+        });
+        
+        $compareUnsavedBtn.click(async function () {
+            await DoCompareUnsavedAsync();
+        });
+
         $("#newBtn").click(function () {
                 addNewFile("New!");
         });
+        
+        async function DoCompareUnsavedAsync() {
+            const tabData = tabsObject.Tabs[currentTabIndex];
 
+            const data = tabData.View.state.doc.toString();
+            await compareUnsavedAsync(tabData.FullName, data);
+            
+        }
+
+        function findTabIndex(tabId) {
+            if (!tabsObject || !Array.isArray(tabsObject.Tabs)) return -1;
+
+            return tabsObject.Tabs.findIndex(tab => tab.TabId === tabId);
+        }
+        
         function doSaveAs() {
             if (!currentTabData.Modified) return;
-            _dialog.show("Save As", "Enter the file name to save as <input id='btnDoSaveFileName' class='form-control' placeHolder='filename.filetype' type='text'></input>", ["Save","Cancel"], 
+            _dialog.show("Save As", "Enter the file name to save as <input id='btnDoSaveFileName' class='form-control' placeHolder='filename.filetype' type='text'/>", ["Save","Cancel"], 
             function(e) {
-                if (e == "Save") {
-                    var filename = $("#btnDoSaveFileName").val();
+                if (e === "Save") {
+                    const filename = $("#btnDoSaveFileName").val();
                     if (filename === "" || filename === "New!") {
                         _notification.show("Invalid file name","error");
                         return;
@@ -408,35 +459,38 @@
 
                     //filename += ";1";
                     // setup the new file name
-                    var tabData = tabsObject.Tabs[currentTabIndex];
+                    const tabData = tabsObject.Tabs[currentTabIndex];
 
                     $.observable(tabData).setProperty("Name", filename);
                     $.observable(tabData).setProperty("FullName", `${tabData.Path}/${filename}`);
 
                     saveTab(currentTabIndex); // TODO async!!
                 }
-                if (e == "Cancel") {
+                if (e === "Cancel") {
                     _dialog.close();
                 }
             });
         }
 
         function removeTab(index) {
+            const tabId = tabsObject.Tabs[index].TabId;
+            removeFromRecentOrder(tabId);
+            
             if (index === currentTabIndex) {
                 $.observable(tabsObject.Tabs).remove(index);
-                var lastTab = $('#myTabs a:last');
+                const lastTab = $('#myTabs a:last');
                 lastTab.tab('show');
             } else {
                 $.observable(tabsObject.Tabs).remove(index);
             }
         }
 
-        $("#myTabs").on("mouseenter",
+        $myTabs.on("mouseenter",
             ".aCloseButton",
             function() {
                 $(this).removeClass("far").addClass("fas");
             });
-        $("#myTabs").on("mouseleave",
+        $myTabs.on("mouseleave",
             ".aCloseButton",
             function() {
                 $(this).removeClass("fas").addClass("far");
@@ -445,7 +499,7 @@
         $("#myDisks").on("click",
             ".aDisk",
             function() {
-                var disk = $(this).text();
+                const disk = $(this).text();
                 if (breadCrumb[0].toLowerCase() === disk.toLowerCase()) return;
                 changeFolder(disk);
             });
@@ -453,31 +507,31 @@
         $("#myBreadCrumb").on("click",
             ".aCrumb",
             function() {
-                var index = $(this).data("index");
-                var fullName = breadCrumb.slice(0, index + 1).join("/");
+                const index = $(this).data("index");
+                const fullName = breadCrumb.slice(0, index + 1).join("/");
                 changeFolder(fullName);
             });
-        $("#gotos").on("click",
+        $gotos.on("click",
             ".aGoto",
-            function (event) {
-                var fullName = $(this).text();
+            function () {
+                const fullName = $(this).text();
                 changeFolder(fullName);
             });
 
-        $("#myFiles").on("click",
+        $myFiles.on("click",
             ".aRow",
             function(event) {
-                var isFolder = $(this).find("a").hasClass("aFolder");
+                const isFolder = $(this).find("a").hasClass("aFolder");
                 if (isFolder) {
                     handleFolder($(this).find("a").text());
                 } else {
                     event.preventDefault();
 
-                    var position = $(this).offset();
+                    const position = $(this).offset();
 
 
                     _$fileTd = $(this).find("td");
-                    _fileName = $(this).find("span").text()
+                    _fileName = $(this).find("span").text();
                     _$fileTd.css('background-color', 'yellow');
 
                     // Show the popup menu near the clicked link
@@ -514,37 +568,62 @@
             $("#popupDelete").on('click', function () {
                 alert("Delete not implemented yet");
             });
+            $("#popupCompareFirst").on('click', function () {
+                _compareFirst = `${breadCrumb.join("/")}/${_fileName}`;
+                $popupCompareTo.text(`Compare to: ${_compareFirst}`);
+                $popupCompareTo.removeClass('d-none');
+            });
+            $popupCompareTo.on('click', async function () {
+                let compareSecond = `${breadCrumb.join("/")}/${_fileName}`;
+                await compareTwoFilesAsync(_compareFirst, compareSecond);
+            });
         });
 
 
         //--------------------------------------------------------
 
         function saveTab(index) {
-            var tabData = tabsObject.Tabs[index];
-            var file = tabData.FullName;
+            const tabData = tabsObject.Tabs[index];
+            const file = tabData.FullName;
             saveFile(file, tabData);
         }
 
         window.onDocumentChanged = function() {
             if (currentTabData.Modified === true) return;
             $.observable(currentTabData).setProperty("Modified", true);
+            // enable the compare unsaved button
+            setupUnsavedBtn();
         };
+        
+        function setupUnsavedBtn() {
+            if (currentTabData.Modified && currentTabData.Name !== "New!") {
+                $compareUnsavedBtn
+                    .removeClass("disabled")
+                    .removeAttr("aria-disabled")
+                    .removeAttr("tabindex");
+            } else {
+                $compareUnsavedBtn
+                    .addClass("disabled")
+                    .attr("aria-disabled", "true")
+                    .attr("tabindex", "-1");
+            }
+        }
 
         function handleFolder(folder) {
-            var fullName = `${breadCrumb.join("/")}/${folder}`;
+            const fullName = `${breadCrumb.join("/")}/${folder}`;
             changeFolder(fullName);
-        };
+        }
 
         function addRecent(folder) {
-            var newObject = { Name: folder }
+            const newObject = {Name: folder};
             if (_recents.contains(newObject)) return;
 
             _recents.push(newObject);
 
 
             _recents.sort(function (a, b) {
-                var nameA = a.Name.toLowerCase();
-                var nameB = b.Name.toLowerCase();
+                const nameA = a.Name.toLowerCase();
+                const nameB = b.Name.toLowerCase();
                 if (nameA < nameB) {
                     return -1;
                 }
@@ -554,57 +633,170 @@
                 return 0;
             });
 
-            var htmlOutput = recentsTemplate.render(_recents);
-            $("#gotos").html(htmlOutput);
+            const htmlOutput = recentsTemplate.render(_recents);
+            $gotos.html(htmlOutput);
             //alert(folder);
-        };
+        }
+
+        async function compareContentAsync(firstFile, secondFile, info1, info2, firstContent, secondContent) {
+                console.log("attempting to create unifiedDiff");
+                // Compute the diff in unified format
+                const unifiedDiff = window.Diff.createTwoFilesPatch(
+                    firstFile,
+                    secondFile,
+                    firstContent,
+                    secondContent,
+                    info1,
+                    info2,
+                    { context: 3 }
+                );
+
+
+                console.log("attempting to generate html from diff");
+
+                const diffHtml = Diff2Html.html(unifiedDiff, {
+                    drawFileList: false,
+                    matching: 'lines',
+                    outputFormat: 'side-by-side' // or 'line-by-line'
+                });
+
+                console.log("attempting to create a window");
+                const newWin = window.open('', '', 'width=1000,height=800,resizable=yes,scrollbars=yes');
+                if (!newWin) {
+                    hideLoading("#two");
+                    alert("Popup blocked. Please allow popups for this site.");
+                    return;
+                }
+
+                newWin.document.write(`
+  <html lang="">
+    <head>
+      <title>Diff Output</title>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
+    </head>
+    <body>
+      ${diffHtml}
+    </body>
+  </html>
+`);
+
+                newWin.document.close();
+        }
+        
+
+        async function compareTwoFilesAsync(firstFile, secondFile) {
+            try {
+                showLoading("#two");
+                
+                console.log(firstFile);
+                let firstContent = await loadFileAsync(firstFile);
+                console.log(secondFile);
+                let secondContent = await loadFileAsync(secondFile);
+                
+                await compareContentAsync(firstFile, secondFile, "", "", firstContent, secondContent);
+                hideLoading("#two");
+
+
+            } catch (err) {
+                hideLoading("#two");
+                alert('Error comparing files: ' + err.message);
+            }
+        }
+
+        async function compareUnsavedAsync(firstFile, secondContent) {
+            try {
+                showLoading("#two");
+
+                console.log(firstFile);
+                const firstContent = await loadFileAsync(firstFile);
+
+                // convert \n to \r\n
+                const output = secondContent.replace(/\r?\n/g, "\r\n");
+                
+                await compareContentAsync(firstFile, "", "ORIGINAL", "UNSAVED", firstContent, output);
+                hideLoading("#two");
+
+
+            } catch (err) {
+                hideLoading("#two");
+                alert('Error comparing files: ' + err.message);
+            }
+        }
+
+        async function compareRecentAsync(firstFile, secondFile, firstContent, secondContent) {
+            try {
+                showLoading("#two");
+                
+                await compareContentAsync(firstFile, secondFile, "", "", firstContent, secondContent);
+                hideLoading("#two");
+
+
+            } catch (err) {
+                hideLoading("#two");
+                alert('Error comparing recent tabs: ' + err.message);
+            }
+        }
 
         function addFile(file) {
-            var fullName = `${breadCrumb.join("/")}/${file}`;
+            const fullName = `${breadCrumb.join("/")}/${file}`;
             addRecent(`${breadCrumb.join("/")}`)
 
             if (isOpenAlready(fullName)) return;
 
-            var tabData = {
+            const tabData = {
                 "Path": breadCrumb.join("/"),
                 "Name": file,
                 "FullName": fullName,
                 "TabId": `tab${tabCount}`,
                 "Modified": false
-            }
+            };
 
             tabCount++;
 
             $.observable(tabsObject.Tabs).insert(tabData);
+            tabsObject.RecentOrder.push(tabData.TabId);
+            if (tabsObject.RecentOrder.length > 1) {
+                $compareBtn
+                    .removeClass("disabled")
+                    .removeAttr("aria-disabled")
+                    .removeAttr("tabindex");
+            }
 
-            var insertedTab = $('#myTabs a:last');
+            const insertedTab = $('#myTabs a:last');
             insertedTab.tab('show');
 
             loadFile(fullName, tabData);
-        };
+        }
 
         function addNewFile(file) {
-            var fullName = `${breadCrumb.join("/")}/${file}`;
+            const fullName = `${breadCrumb.join("/")}/${file}`;
 
-            var tabData = {
+            const tabData = {
                 "Path": breadCrumb.join("/"),
                 "Name": file,
                 "FullName": fullName,
                 "TabId": `tab${tabCount}`,
                 "Modified": true
-            }
+            };
 
             tabCount++;
 
             $.observable(tabsObject.Tabs).insert(tabData);
+            tabsObject.RecentOrder.push(tabData.TabId);
+            if (tabsObject.RecentOrder.length > 1) {
+                $compareBtn
+                    .removeClass("disabled")
+                    .removeAttr("aria-disabled")
+                    .removeAttr("tabindex");
+            }
 
-            var insertedTab = $('#myTabs a:last');
+            const insertedTab = $('#myTabs a:last');
             insertedTab.tab('show');
             tabData.View = openVmsEditor.load("", "#" + tabData.TabId + " div");
 
-        };
+        }
 
-        const gutterStyle = dimension => ({
+        const gutterStyle = () => ({
             'flex-basis': `${GUTTER_SIZE}px`
         });
         const elementStyle = (dimension, size) => ({
@@ -624,8 +816,8 @@
         };
 
         function isOpenAlready(fullName) {
-            var found = false;
-            var tabId = "";
+            let found = false;
+            let tabId = "";
             $.each(tabsObject.Tabs, function(index, obj) {
                 if (obj.FullName === fullName) {
                     found = true;
@@ -645,21 +837,21 @@
             return a.localeCompare(b, undefined, { sensitivity: 'accent' }) === 0;
         }
 
-        function fileNameNoVersion(text) {
-            var index = text.indexOf(";");
+        function getFileNameNoVersion(text) {
+            const index = text.indexOf(";");
             if (index === -1) return text;
             return text.substring(0, index);
         }
 
         function saveFile(file, tabData) {
             try {
-                var fileNameNoVers = fileNameNoVersion(tabData.Name);
-                var data = JSON.stringify(tabData.View.state.doc.toString());
+                const  fileNameNoVersion = getFileNameNoVersion(tabData.Name);
+                const data = JSON.stringify(tabData.View.state.doc.toString());
 
                 showLoading("#two");
                 $.ajax({
                     type: 'POST',
-                    url: `VmsEditor/saveFile?path=${file}`,
+                    url: `${basePath}/saveFile?path=${file}`,
                     dataType: 'text',
                     contentType: "application/json",
                     data: data,
@@ -672,20 +864,21 @@
                                 $.observable(tabData).setProperty("FullName", `${tabData.Path}/${data}`);
                             }
                             $.observable(tabData).setProperty("Modified", false);
+                            setupUnsavedBtn();
 
                             // insert into the file list the new name
                             console.log(breadCrumb.join("/") + " === " + tabData.Path + " : " +
                                 (breadCrumb.join("/") === tabData.Path));
 
                             if (breadCrumb.join("/") === tabData.Path && data !== "") {
-                                var selector = $(`#myFiles span[nameNoVer='${fileNameNoVers}'`).first();
-                                var tr = selector.closest('tr');
-                                var testHtml = fileTemplate.render(tabData);
+                                const selector = $(`#myFiles span[nameNoVer='${fileNameNoVersion}'`).first();
+                                const tr = selector.closest('tr');
+                                const testHtml = fileTemplate.render(tabData);
                                 if (tr.length === 0) {
-                                    $("#myFiles").append(testHtml);
+                                    $myFiles.append(testHtml);
                                     return;
                                 }
-                                var showHistory = $("#showHistory").is(':checked');
+                                const showHistory = $showHistory.is(':checked');
                                 if (showHistory) {
                                     tr.before(testHtml);
                                 } else {
@@ -697,7 +890,7 @@
                             alert(xhr.responseText);
                         }
                     },
-                    error: function(xhr, ajaxOptions, thrownError) {
+                    error: function(xhr) {
                         hideLoading("#two");
                         alert("response:" + xhr.responseText);
                     }
@@ -708,12 +901,27 @@
             }
         }
 
+
+        async function loadFileAsync(file) {
+            const response = await fetch(`${basePath}/GetFile?path=${encodeURIComponent(file)}`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.log("Response failed: " + errorText);
+                throw new Error(errorText);
+            }
+
+            return await response.text();
+        }
+         
         function loadFile(file, tabData) {
             try {
                 showLoading("#two");
                 $.ajax({
                     type: 'POST',
-                    url: `VmsEditor/GetFile?path=${file}`,
+                    url: `${basePath}/GetFile?path=${file}`,
                     dataType: 'text',
                     success: function(data, status, xhr) {
                         hideLoading("#two");
@@ -724,7 +932,7 @@
                             alert(xhr.responseText);
                         }
                     },
-                    error: function(xhr, ajaxOptions, thrownError) {
+                    error: function(xhr) {
                         hideLoading("#two");
                         alert("response:" + xhr.responseText);
                     }
@@ -751,17 +959,38 @@
             $(selector).LoadingOverlay("hide");
             $("#bodyBlock").css("display", "none");
         }
-
+ 
+        function changeRecentOrder(tabId) {
+            const index = tabsObject.RecentOrder.indexOf(tabId);
+            if (index !== -1) {
+                tabsObject.RecentOrder.splice(index, 1);      // Remove from current position
+                tabsObject.RecentOrder.push(tabId);           // Add to end
+            }
+        }
+        
+        function removeFromRecentOrder(tabId) {
+            const index = tabsObject.RecentOrder.indexOf(tabId);
+            if (index !== -1) {
+                tabsObject.RecentOrder.splice(index, 1);      // Remove from current position
+            }
+            if (tabsObject.RecentOrder.length < 2) {
+                $compareBtn
+                    .addClass("disabled")
+                    .attr("aria-disabled", "true")
+                    .attr("tabindex", "-1");
+            }
+        }
+        
         function changeFolder(folder) {
             try {
                 showLoading("#one");
-                var include = $("#include").val();
-                var exclude = $("#exclude").val();
-                var showHistory = $("#showHistory").is(':checked');
+                const include = $include.val();
+                const exclude = $exclude.val();
+                const showHistory = $showHistory.is(':checked');
 
                 $.ajax({
                     type: 'POST',
-                    url: `VmsEditor/GetFolder?include=${include}&exclude=${exclude}&showHistory=${showHistory}&path=${folder}`,
+                    url: `${basePath}/GetFolder?include=${include}&exclude=${exclude}&showHistory=${showHistory}&path=${folder}`,
                     dataType: 'json',
                     success: function(data, status, xhr) {
                         hideLoading("#one");
@@ -769,14 +998,14 @@
                             $.observable(breadCrumb).refresh(data.BreadCrumb);
 
                             files = data.Files;
-                            var htmlOutput = folderTemplate.render(files);
-                            $("#myFiles").html(htmlOutput);
+                            const htmlOutput = folderTemplate.render(files);
+                            $myFiles.html(htmlOutput);
                         } else {
                             console.log(xhr.responseText);
                             _notification.show("Goto folder was not found: " + folder, "error");
                         }
                     },
-                    error: function(xhr, ajaxOptions, thrownError) {
+                    error: function(xhr) {
                         hideLoading("#one");
                         console.log(xhr.responseText);
                         _notification.show("Goto folder was not found: " + folder, "error");
@@ -789,10 +1018,16 @@
             }
         }
 
-        $('#myTabs').on('shown.bs.tab',
+        $myTabs.on('shown.bs.tab',
             function(e) {
                 currentTabIndex = $.view(e.target).index;
                 currentTabData = tabsObject.Tabs[currentTabIndex];
+
+                // fix up the recent tab order
+                changeRecentOrder(currentTabData.TabId);
+                
+                // set up the compare unsaved button
+                setupUnsavedBtn();
                 // prove we have the correct data alert(currentTabData.Name);
             });
 
@@ -884,6 +1119,11 @@
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a id="saveAsBtn" class="dropdown-item" href="#">Save As</a></li>
                                 <li><a id="newBtn" class="dropdown-item" href="#">New</a></li>
+                                <hr class="dropdown-divider">
+                                <li><a id="compareBtn" class="dropdown-item disabled" href="#" tabindex="-1" aria-disabled="true"
+                                       data-bs-toggle="tooltip" data-bs-placement="left" title="Compare the two most recent tabs">Compare Tabs</a></li>
+                                <li><a id="compareUnsavedBtn" class="dropdown-item disabled" href="#" tabindex="-1" aria-disabled="true"
+                                       data-bs-toggle="tooltip" data-bs-placement="left" title="Compare the unsaved changes to saved">Compare Unsaved</a></li>
                             </ul>
                         </div>
 
@@ -934,10 +1174,14 @@
             </div>
         </div>
     </div>
+    <div id="hack"></div>
 
 <div class="dropdown-menu" id="sharedPopupMenu">
     <a class="dropdown-item" id="popupEdit" href="#">Edit</a>
     <a class="dropdown-item" id="popupCopy" href="#">Copy</a>
     <a class="dropdown-item" id="popupRename" href="#">Rename</a>
     <a class="dropdown-item" id="popupDelete" href="#">Delete</a>
+    <hr class="dropdown-divider">
+    <a class="dropdown-item" id="popupCompareFirst" href="#">Compare First</a>
+    <a class="dropdown-item d-none" id="popupCompareTo" href="#">Compare</a>
 </div>
