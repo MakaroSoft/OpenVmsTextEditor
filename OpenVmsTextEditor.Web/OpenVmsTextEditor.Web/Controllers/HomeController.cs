@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OpenVmsTextEditor.Domain.Interfaces;
@@ -20,6 +21,7 @@ public class HomeController : Controller
         _pageInfoService = pageInfoService;
     }
 
+    [Authorize]
     public async Task<IActionResult> Index(string? include, string? exclude, bool showHistory, string startPath)
     {
         _logger.LogDebug("Index(include={include}, exclude={exclude}, showHistory={showHistory}, startPath={path})", include, exclude, showHistory, startPath);
