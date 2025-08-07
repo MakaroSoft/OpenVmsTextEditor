@@ -26,7 +26,7 @@ builder.Logging.AddSerilog(new LoggerConfiguration()
 var configuration = builder.Configuration;
 
 // Add services to the container
-builder.Services.AddControllers().AddJsonOptions(options =>
+builder.Services.AddControllersWithViews().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.PropertyNamingPolicy = null;
 });
@@ -82,7 +82,9 @@ app.UseRouting();
 app.UseAuthentication(); // Add this
 app.UseAuthorization();
 
-app.MapDefaultControllerRoute();
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 app.MapRazorPages();
 
 app.Run();
