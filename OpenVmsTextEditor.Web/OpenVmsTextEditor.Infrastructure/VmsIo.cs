@@ -1,7 +1,12 @@
-﻿using System.Text;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using OpenVmsTextEditor.Domain;
 using OpenVmsTextEditor.Domain.Interfaces;
 using File = OpenVmsTextEditor.Domain.Models.File;
@@ -12,12 +17,23 @@ public class VmsIo : IOperatingSystemIo
 {
     private readonly ILogger<VmsIo> _logger;
     private readonly VmsEditorSettings _vmsEditorSettings;
+    private readonly IOptions<JwtIssueOptions> _jwtOpt;
+    private readonly IHttpContextAccessor _http;
+    private readonly RsaSecurityKey _signingKey;
 
     // this signature constructor must not change
-    public VmsIo(ILoggerFactory loggerFactory, IOptions<VmsEditorSettings> vmsEditorSettings)
+    public VmsIo(ILoggerFactory loggerFactory, 
+        IOptions<VmsEditorSettings> vmsEditorSettings,
+        IOptions<JwtIssueOptions> jwtOpt,
+        IHttpContextAccessor httpContextAccessor, 
+        RsaSecurityKey securityKey)
     {
         _logger = loggerFactory.CreateLogger<VmsIo>();
         _vmsEditorSettings = vmsEditorSettings.Value;
+        
+        _jwtOpt = jwtOpt;
+        _http = httpContextAccessor;
+        _signingKey = securityKey;
     }
 
     public async Task<IList<string>> GetDisks()
@@ -63,6 +79,19 @@ public class VmsIo : IOperatingSystemIo
 
             _logger.LogDebug("vmsExplorerApiUrl = {0}", vmsExplorerApiUrl);
 
+            
+            
+            // ---- NEW: mint short-lived JWT from current user and attach as Bearer ----
+            var user = _http.HttpContext?.User;
+            if (!(user?.Identity?.IsAuthenticated ?? false))
+                throw new UnauthorizedAccessException("User must be authenticated.");
+
+            var token = IssueUserJwt(user!, _signingKey, _jwtOpt.Value);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            // -------------------------------------------------------------------------
+            
+            
+            client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Add("accept", "application/json");
             var requestUri = $"{vmsExplorerApiUrl}/api/directory/{fullFolderName}?showHistory={showHistory}";
             if (!string.IsNullOrWhiteSpace(include)) requestUri += $"&include={include}";
@@ -155,4 +184,44 @@ public class VmsIo : IOperatingSystemIo
             throw;
         }
     }
+    
+    
+    
+    private static string IssueUserJwt(ClaimsPrincipal principal, RsaSecurityKey key, JwtIssueOptions opts)
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty),
+            new(ClaimTypes.Name, principal.Identity?.Name ?? string.Empty),
+            // Optional: include roles so the Java API can authorize by role
+            // .. principal.FindAll(ClaimTypes.Role).Select(r => new Claim("roles", r.Value))
+        };
+
+        var creds = new SigningCredentials(key, SecurityAlgorithms.RsaSha256);
+        var jwt = new JwtSecurityToken(
+            issuer: opts.Issuer,
+            audience: opts.Audience,
+            claims: claims,
+            notBefore: now.UtcDateTime,
+            expires: now.AddMinutes(5).UtcDateTime, // short-lived hop token
+            signingCredentials: creds);
+
+        if (!string.IsNullOrEmpty(opts.KeyId))
+            jwt.Header["kid"] = opts.KeyId;
+
+        return new JwtSecurityTokenHandler().WriteToken(jwt);
+    }
+    
+    
+    
 }
+// matches your Program.cs binding
+public record JwtIssueOptions
+{
+    public string Issuer { get; init; } = default!;
+    public string Audience { get; init; } = default!;
+    public string KeyId { get; init; } = "kid-1";
+}
+
