@@ -21,7 +21,7 @@ public class WindowsIo : IOperatingSystemIo
         _vmsEditorSettings = vmsEditorSettings.Value;
     }
 
-    public async Task<IList<string>> GetDisks()
+    public async Task<IList<string>> GetDisks(CancellationToken ct = default)
     {
         return await Task.Run(() => { return DriveInfo.GetDrives().Select(x => StripColonSlash(x.Name)).ToList(); });
     }
@@ -33,7 +33,8 @@ public class WindowsIo : IOperatingSystemIo
         return diskName.Substring(0, index);
     }
 
-    public async Task<IList<File>> GetDirectoryFiles(string? include, string? exclude, bool showHistory, string fullFolderName)
+    public async Task<IList<File>> GetDirectoryFiles(string? include, string? exclude, bool showHistory, string fullFolderName,
+        CancellationToken ct = default)
     {
         _logger.LogDebug("GetDirectoryFiles(include = {include}, exclude={exclude}, showHistory={showHistory}, fullFolderName = {fullFolderName})", include, exclude, showHistory, fullFolderName);
         fullFolderName = FileFormatter.ToWindowsFolderFormat(fullFolderName);
@@ -84,14 +85,14 @@ public class WindowsIo : IOperatingSystemIo
         return System.Text.RegularExpressions.Regex.IsMatch(fileName, regexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
     }
 
-    public async Task<string> GetFile(string fullFileName)
+    public async Task<string> GetFile(string fullFileName, CancellationToken ct = default)
     {
         _logger.LogDebug("GetFile(fullFileName = {fullFileName})", fullFileName);
         fullFileName = FileFormatter.ToWindowsFolderFormat(fullFileName);
         return await System.IO.File.ReadAllTextAsync(fullFileName);
     }
 
-    public async Task<string> SaveFile(string fullFileName, string fileData)
+    public async Task<string> SaveFile(string fullFileName, string fileData, CancellationToken ct =  default)
     {
         _logger.LogDebug("SaveFile(fullFileName = {fullFileName})", fullFileName);
         await Task.CompletedTask;

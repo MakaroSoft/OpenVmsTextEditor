@@ -19,10 +19,12 @@ public class HttpServer {
 	// Two level map: first level is HTTP Method (GET, POST, OPTION, etc.), second
 	// level is the
 	// request paths.
-	private ArrayList<ApiController> controllers = new ArrayList<ApiController>();
+	private ArrayList<ApiController> _controllers = new ArrayList<ApiController>();
+	private JwtVerifier _jwtVerifier;
 
 	// TODO SSL support
-	public HttpServer(int port) {
+	public HttpServer(int port, JwtVerifier jwtVerifier) {
+		_jwtVerifier = jwtVerifier;
 		_port = port;
 	}
 
@@ -32,7 +34,7 @@ public class HttpServer {
 	 */
 	public void addController(String path, ApiController controller) {
 		controller.setPath(path);
-		controllers.add(controller);
+		_controllers.add(controller);
 	}
 
 	public void start() throws IOException {
@@ -41,7 +43,7 @@ public class HttpServer {
 		Socket client;
 		while ((client = socket.accept()) != null) {
 			_logger.debug("Received connection from {}", client.getRemoteSocketAddress().toString());
-			SocketHandler handler = new SocketHandler(client, controllers);
+			SocketHandler handler = new SocketHandler(client, _controllers, _jwtVerifier);
 			Thread t = new Thread(handler);
 			t.start();
 		}
