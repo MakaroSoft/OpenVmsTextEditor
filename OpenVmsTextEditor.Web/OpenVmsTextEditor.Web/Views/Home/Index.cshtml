@@ -5,6 +5,13 @@
 @{
     ViewBag.Title = "OpenVmsEditor";
     Layout = "_Layout";
+    var returnUrl = $"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}";
+    var username = User.Identity?.Name ?? "Guest";
+    if (username.IndexOf("@", StringComparison.Ordinal) != -1)
+    {
+        username = username.Substring(0, username.IndexOf("@", StringComparison.Ordinal));
+    }
+
 }
 @section Styles
 {
@@ -1047,7 +1054,7 @@
 
             <nav class="navbar navbar-expand-lg bg-dark-subtle ">
                 <div class="container-fluid">
-                    <a class="navbar-brand" href="#">OpenVMS Text Editor</a>
+                    @username [<a asp-controller="Home" asp-action="Logout" asp-route-returnUrl="@returnUrl">Logout</a>]
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>

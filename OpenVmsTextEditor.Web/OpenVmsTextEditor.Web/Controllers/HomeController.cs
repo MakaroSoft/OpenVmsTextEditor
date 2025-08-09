@@ -1,5 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OpenVmsTextEditor.Domain.Interfaces;
@@ -12,15 +14,33 @@ public class HomeController : Controller
     private readonly ILogger<HomeController> _logger;
     private readonly IOperatingSystemIo _operatingSystemIo;
     private readonly IPageInfoService _pageInfoService;
+    private readonly SignInManager<IdentityUser> _signInManager;
 
     public HomeController(ILogger<HomeController> logger,
-        IOperatingSystemIo operatingSystemIo, IPageInfoService pageInfoService) 
+        IOperatingSystemIo operatingSystemIo, 
+        IPageInfoService pageInfoService,
+        SignInManager<IdentityUser> signInManager) 
     {
         _logger = logger;
         _operatingSystemIo = operatingSystemIo;
         _pageInfoService = pageInfoService;
+        _signInManager = signInManager;
     }
 
+    [HttpGet]
+    [AllowAnonymous] // optional, but fine
+    public async Task<IActionResult> Logout(string? returnUrl)
+    {
+        await _signInManager.SignOutAsync();
+
+        // Redirect back to the page the user came from (with query string)
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return LocalRedirect(returnUrl);
+
+        // Fallback: app root under your PathBase (/VmsEditor)
+        return Redirect($"{Request.PathBase}/");
+    }
+    
     public async Task<IActionResult> Index(string? include, string? exclude, bool showHistory, string startPath, CancellationToken ct)
     {
         _logger.LogDebug("Index(include={include}, exclude={exclude}, showHistory={showHistory}, startPath={path})", include, exclude, showHistory, startPath);

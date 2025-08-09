@@ -15,7 +15,10 @@ using OpenVmsTextEditor.Infrastructure;
 
 using Microsoft.IdentityModel.Tokens;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,7 +63,7 @@ builder.Services
 
 
 // Load RSA private key for signing tokens we send to the Java API
-builder.Services.AddSingleton<RsaSecurityKey>(sp =>
+builder.Services.AddSingleton<RsaSecurityKey>(_ =>
 {
     // REPLACE with Key Vault or secure storage in production
     var pemPath = configuration["Jwt:PrivateKeyPemPath"] ?? "keys/jwt-private.pem";
@@ -89,13 +92,23 @@ builder.Services.AddHttpClient<IOpenVmsExplorerApiClient, OpenVmsExplorerApiClie
 {
     http.BaseAddress = new Uri(builder.Configuration["VmsEditorSettings:VmsExplorerApiUrl"] ?? string.Empty);
     http.DefaultRequestHeaders.Accept.ParseAdd("application/json");
-}).AddHttpMessageHandler<JwtHopHandler>();;
+}).AddHttpMessageHandler<JwtHopHandler>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<IOperatingSystemIo, VmsIo>();
 builder.Services.AddTransient<IPageInfoService, PageInfoService>();
 
 var app = builder.Build();
+
+// Program.cs after app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();                 // applies pending migrations
+
+    await SeedAsync(scope.ServiceProvider); // optional custom seed (see below)
+}
+
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
@@ -125,3 +138,58 @@ app.MapControllers().RequireAuthorization();
 app.MapRazorPages();
 
 app.Run();
+
+static async Task SeedAsync(IServiceProvider services)
+{
+    // This is outside of the project so I don't accidentally push it to github :)
+    var configPath = @"C:\repos\vmsEditorConfig.json";
+    if (!File.Exists(configPath))
+    {
+        throw new FileNotFoundException($"Config file not found: {configPath}");
+    }
+
+    var json = await File.ReadAllTextAsync(configPath);
+    var config = JsonSerializer.Deserialize<SeedConfig>(json) 
+                 ?? throw new InvalidOperationException("Invalid config file format.");
+
+    var roleMgr = services.GetRequiredService<RoleManager<IdentityRole>>();
+    var userMgr = services.GetRequiredService<UserManager<IdentityUser>>();
+
+    // Create roles if they don't exist
+    string[] roles = { "Admin", "SuperUser", "User" };
+    foreach (var r in roles)
+    {
+        if (!await roleMgr.RoleExistsAsync(r))
+        {
+            await roleMgr.CreateAsync(new IdentityRole(r));
+        }
+    }
+
+    // Create admin if it doesn't exist
+    var admin = await userMgr.FindByEmailAsync(config.AdminEmail);
+    if (admin == null)
+    {
+        admin = new IdentityUser
+        {
+            UserName = config.AdminEmail,
+            Email = config.AdminEmail,
+            EmailConfirmed = true
+        };
+
+        var createResult = await userMgr.CreateAsync(admin, config.AdminPassword);
+        if (!createResult.Succeeded)
+        {
+            throw new InvalidOperationException(
+                $"Failed to create admin user: {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
+        }
+
+        await userMgr.AddToRoleAsync(admin, "Admin");
+    }
+}
+
+// Strongly typed config model
+public class SeedConfig
+{
+    public string AdminEmail { get; set; } = string.Empty;
+    public string AdminPassword { get; set; } = string.Empty;
+}
