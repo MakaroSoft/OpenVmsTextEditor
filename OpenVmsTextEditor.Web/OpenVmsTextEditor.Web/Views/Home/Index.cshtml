@@ -7,11 +7,6 @@
     Layout = "_Layout";
     var returnUrl = $"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}";
     var username = User.Identity?.Name ?? "Guest";
-    if (username.IndexOf("@", StringComparison.Ordinal) != -1)
-    {
-        username = username.Substring(0, username.IndexOf("@", StringComparison.Ordinal));
-    }
-
 }
 @section Styles
 {
@@ -1054,7 +1049,7 @@
 
             <nav class="navbar navbar-expand-lg bg-dark-subtle ">
                 <div class="container-fluid">
-                    @username [<a asp-controller="Home" asp-action="Logout" asp-route-returnUrl="@returnUrl">Logout</a>]
+                    
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
@@ -1111,7 +1106,7 @@
                         </div>
                         <div class="col pe-5">
                             <div class="dropdown input-group col-12">
-                                <input id="goto" class="form-control" type="text" data-bs-toggle="dropdown" />
+                                <input id="goto" class="form-control" type="text" data-bs-toggle="dropdown"/>
                                 <ul id="gotos" class="dropdown-menu">
                                 </ul>
                                 <button class="btn btn-outline-secondary" type="button" id="btn-goto">Go</button>
@@ -1119,7 +1114,7 @@
                         </div>
 
                         <div class="btn-group">
-                            <button type="button" id="saveBtn" class="btn btn-primary"  data-bs-display="static">Save</button>
+                            <button type="button" id="saveBtn" class="btn btn-primary" data-bs-display="static">Save</button>
                             <button type="button" class="btn  btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                                 <span class="visually-hidden">Toggle Dropdown</span>
                             </button>
@@ -1127,13 +1122,40 @@
                                 <li><a id="saveAsBtn" class="dropdown-item" href="#">Save As</a></li>
                                 <li><a id="newBtn" class="dropdown-item" href="#">New</a></li>
                                 <hr class="dropdown-divider">
-                                <li><a id="compareBtn" class="dropdown-item disabled" href="#" tabindex="-1" aria-disabled="true"
+                                <li>
+                                    <a id="compareBtn" class="dropdown-item disabled" href="#" tabindex="-1" aria-disabled="true"
                                        data-bs-toggle="tooltip" data-bs-placement="left" title="Compare the two most recent tabs">Compare Tabs</a></li>
-                                <li><a id="compareUnsavedBtn" class="dropdown-item disabled" href="#" tabindex="-1" aria-disabled="true"
+                                <li>
+                                    <a id="compareUnsavedBtn" class="dropdown-item disabled" href="#" tabindex="-1" aria-disabled="true"
                                        data-bs-toggle="tooltip" data-bs-placement="left" title="Compare the unsaved changes to saved">Compare Unsaved</a></li>
                             </ul>
                         </div>
+                        <div class="col col-auto ps-2">
+                            
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center"
+                                    type="button"
+                                    id="userMenu"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                <!-- Hamburger icon -->
+                                <span >☰</span>
+                            </button>
 
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                                <li>
+                                    <h6 class="dropdown-header">@username</h6>
+                                </li>
+                                <hr class="dropdown-divider"/>
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-controller="Home"
+                                       asp-action="Logout"
+                                       asp-route-returnUrl="@returnUrl">Logout</a>
+                                </li>
+                            </ul>
+                        </div>                    
+                        </div>
 
 
                     </div>
