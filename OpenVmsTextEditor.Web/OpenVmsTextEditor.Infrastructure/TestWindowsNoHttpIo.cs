@@ -7,21 +7,24 @@ using File = OpenVmsTextEditor.Domain.Models.File;
 
 namespace OpenVmsTextEditor.Infrastructure;
 
-public class WindowsIo : IOperatingSystemIo
+/// <summary>
+/// This class exists solely as a test method that bypasses the java API and accesses the files locally.
+/// </summary>
+public class TestWindowsNoHttpIo : IOperatingSystemIo
 {
-    private readonly ILogger<WindowsIo> _logger;
+    private readonly ILogger<TestWindowsNoHttpIo> _logger;
 
     // ReSharper disable once NotAccessedField.Local
     private readonly VmsEditorSettings _vmsEditorSettings;
 
     // this signature constructor must not change
-    public WindowsIo(ILoggerFactory loggerFactory, IOptions<VmsEditorSettings> vmsEditorSettings)
+    public TestWindowsNoHttpIo(ILoggerFactory loggerFactory, IOptions<VmsEditorSettings> vmsEditorSettings)
     {
-        _logger = loggerFactory.CreateLogger<WindowsIo>();
+        _logger = loggerFactory.CreateLogger<TestWindowsNoHttpIo>();
         _vmsEditorSettings = vmsEditorSettings.Value;
     }
 
-    public async Task<IList<string>> GetDisks(CancellationToken ct = default)
+    public async Task<IList<string>> GetDisksAsync(CancellationToken ct)
     {
         return await Task.Run(() => { return DriveInfo.GetDrives().Select(x => StripColonSlash(x.Name)).ToList(); });
     }
@@ -33,13 +36,13 @@ public class WindowsIo : IOperatingSystemIo
         return diskName.Substring(0, index);
     }
 
-    public async Task<IList<File>> GetDirectoryFiles(string? include, string? exclude, bool showHistory, string fullFolderName,
-        CancellationToken ct = default)
+    public async Task<IList<File>> GetDirectoryFilesAsync(string? include, string? exclude, bool showHistory, string fullFolderName,
+        CancellationToken ct)
     {
         _logger.LogDebug("GetDirectoryFiles(include = {include}, exclude={exclude}, showHistory={showHistory}, fullFolderName = {fullFolderName})", include, exclude, showHistory, fullFolderName);
         fullFolderName = FileFormatter.ToWindowsFolderFormat(fullFolderName);
 
-        var dirs = Directory.GetDirectories(fullFolderName).Select(x => (File)new File
+        var dirs = Directory.GetDirectories(fullFolderName).Select(x => new File
         {
             Name = Path.GetFileName(x),
             Dir = true
@@ -85,14 +88,14 @@ public class WindowsIo : IOperatingSystemIo
         return System.Text.RegularExpressions.Regex.IsMatch(fileName, regexPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
     }
 
-    public async Task<string> GetFile(string fullFileName, CancellationToken ct = default)
+    public async Task<string> GetFileAsync(string fullFileName, CancellationToken ct)
     {
         _logger.LogDebug("GetFile(fullFileName = {fullFileName})", fullFileName);
         fullFileName = FileFormatter.ToWindowsFolderFormat(fullFileName);
         return await System.IO.File.ReadAllTextAsync(fullFileName);
     }
 
-    public async Task<string> SaveFile(string fullFileName, string fileData, CancellationToken ct =  default)
+    public async Task<string> SaveFileAsync(string fullFileName, string fileData, CancellationToken ct )
     {
         _logger.LogDebug("SaveFile(fullFileName = {fullFileName})", fullFileName);
         await Task.CompletedTask;

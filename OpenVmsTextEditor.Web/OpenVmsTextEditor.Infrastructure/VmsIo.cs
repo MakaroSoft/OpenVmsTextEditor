@@ -18,7 +18,7 @@ public class VmsIo : IOperatingSystemIo
         _openVmsExplorerApiClient = openVmsExplorerApiClient;
     }
 
-    public async Task<IList<string>> GetDisks(CancellationToken ct = default)
+    public async Task<IList<string>> GetDisksAsync(CancellationToken ct = default)
     {
         _logger.LogDebug("GetDisks()");
         
@@ -28,7 +28,7 @@ public class VmsIo : IOperatingSystemIo
         return JsonSerializer.Deserialize<List<string>>(json) ?? [];
     }
     
-    public async Task<IList<File>> GetDirectoryFiles(string? include, string? exclude, bool showHistory,
+    public async Task<IList<File>> GetDirectoryFilesAsync(string? include, string? exclude, bool showHistory,
         string fullFolderName, CancellationToken ct = default)
     {
         var resp = await _openVmsExplorerApiClient.GetDirectoryAsync(fullFolderName, showHistory, include, exclude, ct);
@@ -37,7 +37,7 @@ public class VmsIo : IOperatingSystemIo
         return JsonSerializer.Deserialize<List<File>>(json) ?? [];
     }
 
-    public async Task<string> GetFile(string fullFileName, CancellationToken ct = default)
+    public async Task<string> GetFileAsync(string fullFileName, CancellationToken ct = default)
     {
         _logger.LogDebug("GetFile({0})", fullFileName);
 
@@ -59,7 +59,7 @@ public class VmsIo : IOperatingSystemIo
         }
     }
 
-    public async Task<string> SaveFile(string fullFileName, string fileData, CancellationToken ct = default)
+    public async Task<string> SaveFileAsync(string fullFileName, string fileData, CancellationToken ct = default)
     {
         _logger.LogDebug("SaveFile({0})", fullFileName);
 
