@@ -22,6 +22,36 @@ using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var env = builder.Environment;
+
+builder.Configuration.Sources.Clear();
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+if (env.IsDevelopment())
+{
+    // provices a way of using an appsettings.Development.json file outside of the github repo.
+    // so I don't accidentally push any private information
+    var externalDir = Environment.GetEnvironmentVariable("VMS_EDITOR_CONFIG_DIR");
+    if (!string.IsNullOrWhiteSpace(externalDir))
+    {
+        var externalDevJson = Path.Combine(externalDir, "appsettings.Development.json");
+        if (File.Exists(externalDevJson))
+        {
+            // Clear all existing configuration sources to avoid default development.json
+            builder.Configuration.Sources.Clear();
+
+            // Re-add appsettings.json (base)
+            builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+            // Add the external development JSON instead of the default one
+            builder.Configuration.AddJsonFile(externalDevJson, optional: false, reloadOnChange: true);
+
+            // Add environment variables and command-line args back
+            builder.Configuration.AddEnvironmentVariables();
+            builder.Configuration.AddCommandLine(args);
+        }
+    }
+}
 // Set up Serilog
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(new LoggerConfiguration()
@@ -66,7 +96,7 @@ builder.Services
 builder.Services.AddSingleton<RsaSecurityKey>(_ =>
 {
     // REPLACE with Key Vault or secure storage in production
-    var pemPath = configuration["Jwt:PrivateKeyPemPath"] ?? "keys/jwt-private.pem";
+    var pemPath = configuration["Jwt:PrivateKeyPemPath"];
     var rsa = RSA.Create();
     rsa.ImportFromPem(File.ReadAllText(pemPath));
     return new RsaSecurityKey(rsa) { KeyId = configuration["Jwt:KeyId"] ?? "kid-1" };
@@ -100,13 +130,13 @@ builder.Services.AddTransient<IPageInfoService, PageInfoService>();
 
 var app = builder.Build();
 
-// Program.cs after app = builder.Build();
+// run migrations
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();                 // applies pending migrations
 
-    await SeedAsync(scope.ServiceProvider); // optional custom seed (see below)
+    await SeedAsync(scope.ServiceProvider, configuration);
 }
 
 
@@ -139,19 +169,8 @@ app.MapRazorPages();
 
 app.Run();
 
-static async Task SeedAsync(IServiceProvider services)
+static async Task SeedAsync(IServiceProvider services, ConfigurationManager configuration)
 {
-    // This is outside of the project so I don't accidentally push it to github :)
-    var configPath = @"C:\repos\vmsEditorConfig.json";
-    if (!File.Exists(configPath))
-    {
-        throw new FileNotFoundException($"Config file not found: {configPath}");
-    }
-
-    var json = await File.ReadAllTextAsync(configPath);
-    var config = JsonSerializer.Deserialize<SeedConfig>(json) 
-                 ?? throw new InvalidOperationException("Invalid config file format.");
-
     var roleMgr = services.GetRequiredService<RoleManager<IdentityRole>>();
     var userMgr = services.GetRequiredService<UserManager<IdentityUser>>();
 
@@ -165,31 +184,29 @@ static async Task SeedAsync(IServiceProvider services)
         }
     }
 
+    var adminEmail = configuration["Seed:AdminEmail"];
+    var adminPassword = configuration["Seed:AdminPassword"];
+
+    if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword)) return;
+    
     // Create admin if it doesn't exist
-    var admin = await userMgr.FindByEmailAsync(config.AdminEmail);
+    var admin = await userMgr.FindByEmailAsync(adminEmail);
     if (admin == null)
     {
         admin = new IdentityUser
         {
-            UserName = config.AdminEmail,
-            Email = config.AdminEmail,
+            UserName = adminEmail,
+            Email = adminEmail,
             EmailConfirmed = true
         };
 
-        var createResult = await userMgr.CreateAsync(admin, config.AdminPassword);
+        var createResult = await userMgr.CreateAsync(admin, adminPassword);
         if (!createResult.Succeeded)
         {
             throw new InvalidOperationException(
                 $"Failed to create admin user: {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
         }
 
-        await userMgr.AddToRoleAsync(admin, "Admin");
+        await userMgr.AddToRolesAsync(admin, ["Admin", "SuperUser"]);
     }
-}
-
-// Strongly typed config model
-public class SeedConfig
-{
-    public string AdminEmail { get; set; } = string.Empty;
-    public string AdminPassword { get; set; } = string.Empty;
 }
