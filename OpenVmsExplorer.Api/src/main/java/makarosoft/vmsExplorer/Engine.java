@@ -19,6 +19,8 @@ public class Engine {
 		try {
 		int port = 0;
 		String publicKeyPemPath = null;
+		String issuer = null;
+		String audience = null;
 		
 		for (int index = 0; index < args.length; index++) {
 			String arg = args[index];
@@ -32,6 +34,16 @@ public class Engine {
 				publicKeyPemPath = args[index];
 				continue;
 			}
+			if (arg.equalsIgnoreCase("-issuer")) {
+				index++;
+				issuer = args[index];
+				continue;
+			}
+			if (arg.equalsIgnoreCase("-audience")) {
+				index++;
+				audience = args[index];
+				continue;
+			}
 		}
 		
 		if (port == 0) {
@@ -39,21 +51,26 @@ public class Engine {
 			return;
 		}
 		logger.debug("port number is {}", port);
+		
 		if (publicKeyPemPath == null || publicKeyPemPath.trim().equals("")) {
 			logger.error("publicKeyPemPath was not set up. Ex: -publicKeyPemPath /somewhere/jwt-public.pem");
-			return;
-			
+			return;			
 		}
+		logger.debug("publicKeyPemPath is {}", publicKeyPemPath);
 		
+		if (issuer == null || issuer.trim().equals("")) {
+			logger.error("issuer was not set up. Ex: -issuer https://your-dotnet-site");
+			return;			
+		}
+		logger.debug("issuer is {}", issuer);
+
+		if (audience == null || audience.trim().equals("")) {
+			logger.error("audience was not set up. Ex: -audience editor-api");
+			return;			
+		}		
+		logger.debug("audience is {}", audience);
 		
-		// Somewhere central (once per JVM), e.g., static field in a bootstrap class
-		JwtVerifier jwtVerifier = new JwtVerifier(
-		    Paths.get(publicKeyPemPath),
-		    "https://your-dotnet-site", // must match your .NET Issuer
-		    "java-api",                 // must match your .NET Audience
-		    60                          // clock skew in seconds
-		);
-		
+		JwtVerifier jwtVerifier = new JwtVerifier(Paths.get(publicKeyPemPath), issuer, audience, 60);
 		
 		
 		HttpServer server = new HttpServer(port, jwtVerifier);

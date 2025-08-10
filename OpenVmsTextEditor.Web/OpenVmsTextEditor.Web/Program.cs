@@ -82,7 +82,6 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 builder.Services.AddAuthorization();
 
 // -------------------- Outbound JWT setup (for Java API) -----------------
-//builder.Services.Configure<JwtIssueOptions>(configuration.GetSection("Jwt")); // Issuer, Audience
 builder.Services
     .AddOptions<JwtIssueOptions>()
     .Bind(builder.Configuration.GetSection("Jwt"))

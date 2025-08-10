@@ -18,16 +18,16 @@ import java.util.Collections;
 import java.util.List;
 
 public final class JwtVerifier {
-    private final RSAPublicKey publicKey;
-    private final String expectedIssuer;
-    private final String expectedAudience;
-    private final long clockSkewSeconds;
+    private final RSAPublicKey _publicKey;
+    private final String _expectedIssuer;
+    private final String _expectedAudience;
+    private final long _clockSkewSeconds;
 
     public JwtVerifier(Path publicKeyPemPath, String expectedIssuer, String expectedAudience, long clockSkewSeconds) {
-        this.publicKey = loadPublicKey(publicKeyPemPath);
-        this.expectedIssuer = expectedIssuer;
-        this.expectedAudience = expectedAudience;
-        this.clockSkewSeconds = clockSkewSeconds;
+        _publicKey = loadPublicKey(publicKeyPemPath);
+        _expectedIssuer = expectedIssuer;
+        _expectedAudience = expectedAudience;
+        _clockSkewSeconds = clockSkewSeconds;
     }
 
     private static RSAPublicKey loadPublicKey(Path pemPath) {
@@ -54,7 +54,7 @@ public final class JwtVerifier {
             SignedJWT jwt = SignedJWT.parse(bearerToken);
 
             // 1) Signature
-            RSASSAVerifier verifier = new RSASSAVerifier(publicKey);
+            RSASSAVerifier verifier = new RSASSAVerifier(_publicKey);
             if (!jwt.verify(verifier)) {
                 throw new SecurityException("Invalid signature");
             }
@@ -64,22 +64,22 @@ public final class JwtVerifier {
             Instant now = Instant.now();
 
             Instant exp = claims.getExpirationTime() == null ? null : claims.getExpirationTime().toInstant();
-            if (exp == null || now.isAfter(exp.plusSeconds(clockSkewSeconds))) {
+            if (exp == null || now.isAfter(exp.plusSeconds(_clockSkewSeconds))) {
                 throw new SecurityException("Token expired");
             }
 
             Instant nbf = claims.getNotBeforeTime() == null ? null : claims.getNotBeforeTime().toInstant();
-            if (nbf != null && now.isBefore(nbf.minusSeconds(clockSkewSeconds))) {
+            if (nbf != null && now.isBefore(nbf.minusSeconds(_clockSkewSeconds))) {
                 throw new SecurityException("Token not yet valid");
             }
 
             String iss = claims.getIssuer();
-            if (iss == null || !iss.equals(expectedIssuer)) {
+            if (iss == null || !iss.equals(_expectedIssuer)) {
                 throw new SecurityException("Invalid issuer");
             }
 
             List<String> aud = claims.getAudience();
-            if (aud == null || !aud.contains(expectedAudience)) {
+            if (aud == null || !aud.contains(_expectedAudience)) {
                 throw new SecurityException("Invalid audience");
             }
 
@@ -152,21 +152,21 @@ public final class JwtVerifier {
     }
     
     public static class VerifiedToken {
-        private final String sub;
-        private final String name;
-        private final List<String> roles;
-        private final JWTClaimsSet raw;
+        private final String _sub;
+        private final String _name;
+        private final List<String> _roles;
+        private final JWTClaimsSet _raw;
 
         public VerifiedToken(String sub, String name, List<String> roles, JWTClaimsSet raw) {
-            this.sub = sub;
-            this.name = name;
-            this.roles = roles;
-            this.raw = raw;
+            _sub = sub;
+            _name = name;
+            _roles = roles;
+            _raw = raw;
         }
 
-        public String getSub() { return sub; }
-        public String getName() { return name; }
-        public List<String> getRoles() { return roles; }
-        public JWTClaimsSet getRaw() { return raw; }
+        public String getSub() { return _sub; }
+        public String getName() { return _name; }
+        public List<String> getRoles() { return _roles; }
+        public JWTClaimsSet getRaw() { return _raw; }
     }
 }
