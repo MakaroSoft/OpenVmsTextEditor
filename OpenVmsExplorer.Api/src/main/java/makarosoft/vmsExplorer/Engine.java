@@ -65,7 +65,7 @@ public class Engine {
 		logger.debug("issuer is {}", issuer);
 
 		if (audience == null || audience.trim().equals("")) {
-			logger.error("audience was not set up. Ex: -audience editor-api");
+			logger.error("audience was not set up. Ex: -audience explorer-api");
 			return;			
 		}		
 		logger.debug("audience is {}", audience);
