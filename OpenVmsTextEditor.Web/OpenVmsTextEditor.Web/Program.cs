@@ -17,8 +17,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity.UI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,7 +29,7 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnC
 
 if (env.IsDevelopment())
 {
-    // provices a way of using an appsettings.Development.json file outside of the github repo.
+    // provides a way of using an appsettings.Development.json file outside the github repo.
     // so I don't accidentally push any private information
     var externalDir = Environment.GetEnvironmentVariable("VMS_EDITOR_CONFIG_DIR");
     if (!string.IsNullOrWhiteSpace(externalDir))
@@ -52,6 +52,7 @@ if (env.IsDevelopment())
         }
     }
 }
+
 // Set up Serilog
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(new LoggerConfiguration()
@@ -73,10 +74,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // -------------------- Identity (cookies for the site) --------------------
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = false;
+    options.SignIn.RequireConfirmedAccount = true;
 })
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders()
 .AddDefaultUI();
 
 builder.Services.AddAuthorization();
@@ -95,7 +97,7 @@ builder.Services
 builder.Services.AddSingleton<RsaSecurityKey>(_ =>
 {
     // REPLACE with Key Vault or secure storage in production
-    var pemPath = configuration["Jwt:PrivateKeyPemPath"];
+    var pemPath = configuration["Jwt:PrivateKeyPemPath"] ?? "jwt_private.pem";
     var rsa = RSA.Create();
     rsa.ImportFromPem(File.ReadAllText(pemPath));
     return new RsaSecurityKey(rsa) { KeyId = configuration["Jwt:KeyId"] ?? "kid-1" };
@@ -126,6 +128,9 @@ builder.Services.AddHttpClient<IOpenVmsExplorerApiClient, OpenVmsExplorerApiClie
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<IOperatingSystemIo, VmsIo>();
 builder.Services.AddTransient<IPageInfoService, PageInfoService>();
+
+builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Smtp"));
+builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 
 var app = builder.Build();
 

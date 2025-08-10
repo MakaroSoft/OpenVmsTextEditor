@@ -1,8 +1,17 @@
 ﻿@page
 @model ConfirmEmailModel
 @{
-    ViewData["Title"] = "Confirm email";
+    var query = HttpContext.Request.QueryString.HasValue
+        ? HttpContext.Request.QueryString.Value
+        : string.Empty;
 }
 
-<h1>@ViewData["Title"]</h1>
-<partial name="_StatusMessage" model="Model.StatusMessage" />
+<h1>Email confirmed</h1>
+<p>
+    You can now
+    <a asp-area="Identity"
+       asp-page="/Account/Login"
+       asp-route-returnUrl="@Model.ReturnUrl">
+        log in
+    </a>.
+</p>

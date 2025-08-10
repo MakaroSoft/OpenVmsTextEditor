@@ -1055,8 +1055,30 @@
                     </button>
                     <div class="collapse navbar-collapse" id="navbarSupportedContent">
                         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            
+                            <li class="dropdown">
+                                <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center"
+                                        type="button"
+                                        id="userMenu"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                    <span >Admin</span>
+                                </button>
 
-
+                                <ul class="dropdown-menu dropdown-menu-start" aria-labelledby="userMenu">
+                                    <li>
+                                        <h6 class="dropdown-header">@username</h6>
+                                    </li>
+                                    <hr class="dropdown-divider"/>
+                                    <li>
+                                        <a class="dropdown-item"
+                                           asp-controller="Home"
+                                           asp-action="Logout"
+                                           asp-route-returnUrl="@returnUrl">Logout</a>
+                                    </li>
+                                </ul>
+                            </li>                    
+                                
                             <li class="nav-item dropdown ps-3">
                                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     Drives
@@ -1129,32 +1151,6 @@
                                     <a id="compareUnsavedBtn" class="dropdown-item disabled" href="#" tabindex="-1" aria-disabled="true"
                                        data-bs-toggle="tooltip" data-bs-placement="left" title="Compare the unsaved changes to saved">Compare Unsaved</a></li>
                             </ul>
-                        </div>
-                        <div class="col col-auto ps-2">
-                            
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center"
-                                    type="button"
-                                    id="userMenu"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false">
-                                <!-- Hamburger icon -->
-                                <span >☰</span>
-                            </button>
-
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                                <li>
-                                    <h6 class="dropdown-header">@username</h6>
-                                </li>
-                                <hr class="dropdown-divider"/>
-                                <li>
-                                    <a class="dropdown-item"
-                                       asp-controller="Home"
-                                       asp-action="Logout"
-                                       asp-route-returnUrl="@returnUrl">Logout</a>
-                                </li>
-                            </ul>
-                        </div>                    
                         </div>
 
 
