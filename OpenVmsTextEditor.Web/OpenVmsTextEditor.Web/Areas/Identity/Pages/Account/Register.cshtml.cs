@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace OpenVmsTextEditor.Web.Areas.Identity.Pages.Account
 {
@@ -29,13 +30,15 @@ namespace OpenVmsTextEditor.Web.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<IdentityUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
+        private readonly IConfiguration _configuration;
 
         public RegisterModel(
             UserManager<IdentityUser> userManager,
             IUserStore<IdentityUser> userStore,
             SignInManager<IdentityUser> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            IConfiguration configuration)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -43,6 +46,7 @@ namespace OpenVmsTextEditor.Web.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -133,6 +137,17 @@ namespace OpenVmsTextEditor.Web.Areas.Identity.Pages.Account
 
                     await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
                         $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+
+                    // Notify admin of new registration
+                    var adminEmail = _configuration["VmsEditorSettings:AdminNotificationsEmail"];
+                    if (!string.IsNullOrWhiteSpace(adminEmail))
+                    {
+                        var subject = "New user registration from the OpenVmsTextEditor";
+                        var loginUrl = Url.Page("/Account/Login", pageHandler: null, values: new { area = "Identity" }, protocol: Request.Scheme);
+                        var body = $"A new user has registered: {Input.Email} at {DateTime.UtcNow:u}.<br/>" +
+                                   $"Login to the web app: <a href='{HtmlEncoder.Default.Encode(loginUrl)}'>Open login</a>";
+                        await _emailSender.SendEmailAsync(adminEmail, subject, body);
+                    }
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {
