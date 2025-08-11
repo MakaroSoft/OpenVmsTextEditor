@@ -1,0 +1,17 @@
+﻿@page
+@model ConfirmEmailModel
+@{
+    var query = HttpContext.Request.QueryString.HasValue
+        ? HttpContext.Request.QueryString.Value
+        : string.Empty;
+}
+
+<h1>Email confirmed</h1>
+<p>
+    You can now
+    <a asp-area="Identity"
+       asp-page="/Account/Login"
+       asp-route-returnUrl="@Model.ReturnUrl">
+        log in
+    </a>.
+</p>
