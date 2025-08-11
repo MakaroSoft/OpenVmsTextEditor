@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace OpenVmsTextEditor.Web.Pages
 {
-    [AllowAnonymous]
+    [Authorize]
     public class IndexModel : PageModel
     {
         private readonly ILogger<IndexModel> _logger;
