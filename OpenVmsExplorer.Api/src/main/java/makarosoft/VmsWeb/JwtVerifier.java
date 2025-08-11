@@ -91,10 +91,6 @@ public final class JwtVerifier {
             	    "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
             	);
             
-            if (roles.size() == 0) {
-            	throw new SecurityException("Missing Roles");
-            }
-
             return new VerifiedToken(sub, name, roles, claims);
         } catch (ParseException e) {
             throw new SecurityException("Malformed JWT", e);

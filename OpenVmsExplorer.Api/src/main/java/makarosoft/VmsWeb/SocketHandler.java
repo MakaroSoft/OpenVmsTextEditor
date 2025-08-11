@@ -65,6 +65,11 @@ class SocketHandler implements Runnable {
             try {
                 VerifiedToken verifiedToken = _jwtVerifier.verify(token);
                 
+                if (verifiedToken.getRoles() == null) {
+                    respond(403, "Permission Denied.", out);
+                    return;                	
+                }
+                
                 // this is temporary
                 if (!verifiedToken.getRoles().contains("SuperUser")) {
                     respond(403, "Permission Denied.", out);

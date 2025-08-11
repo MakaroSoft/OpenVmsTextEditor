@@ -1,4 +1,7 @@
-﻿using System.Threading;
+﻿using System;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -47,7 +50,27 @@ public class HomeController : Controller
         ViewBag.ShowHistory = showHistory? "Checked" : "";
         ViewBag.Include = include ?? "";
         ViewBag.Exclude = exclude ?? "";
-        return View(await _pageInfoService.GetPageInfoAsync(include, exclude, showHistory, startPath, ct));
+
+        try
+        {
+            var model = await _pageInfoService.GetPageInfoAsync(include, exclude, showHistory, startPath, ct);
+            return View(model);
+        }
+        catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.Forbidden)
+        {
+            // Logout
+            await _signInManager.SignOutAsync();
+
+            // Redirect to custom error page with message
+            return RedirectToAction("NoPermissions", "Error");
+        }
+        catch (Exception e)
+        {
+            // Logout
+            await _signInManager.SignOutAsync();
+            _logger.LogError(e, e.Message);
+            throw;
+        }
     }
 
     [HttpPost("GetFolder")]
