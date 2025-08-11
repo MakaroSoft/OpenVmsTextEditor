@@ -1,11 +1,12 @@
-﻿@using System.Text.Json
+@page
+@model OpenVmsTextEditor.Web.Pages.IndexModel
+@using System.Text.Json
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
-@model OpenVmsTextEditor.Domain.Models.VmsEditorModel
 @{
     ViewBag.Title = "OpenVmsEditor";
     Layout = "_EditorLayout";
-    var returnUrl = $"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}";
+    var returnUrl = $"{Request.PathBase}{Request.Path}{Request.QueryString}";
     var username = User.Identity?.Name ?? "Guest";
 }
 @section Styles
@@ -168,12 +169,12 @@
         const _notification = new MakaroSoft.CommonNotification();
         const _dialog = new MakaroSoft.CommonDialog( { required: true });
 
-        let includeValue = "@ViewBag.Include";
-        let excludeValue = "@ViewBag.Exclude";
+        let includeValue = "@(Model.Include ?? "")";
+        let excludeValue = "@(Model.Exclude ?? "")";
         let gotoValue = "";
 
-        const disks = @Html.Raw(JsonSerializer.Serialize(Model.Disks));
-        let files = @Html.Raw(JsonSerializer.Serialize(Model.Files));
+        const disks = @Html.Raw(JsonSerializer.Serialize(Model.VmsEditor.Disks));
+        let files = @Html.Raw(JsonSerializer.Serialize(Model.VmsEditor.Files));
         const _recents = [];
 
         disks.contains = function (name) {
@@ -189,7 +190,7 @@
 
         const basePath = window.location.pathname.split('/')[1];
 
-        const breadCrumb = @Html.Raw(JsonSerializer.Serialize(Model.BreadCrumb));
+        const breadCrumb = @Html.Raw(JsonSerializer.Serialize(Model.VmsEditor.BreadCrumb));
         
         const tabsObject = {
             "Tabs": [],
@@ -268,7 +269,6 @@
                     }
                 }
             });
-
 
 
 
@@ -761,7 +761,7 @@
                 $compareBtn
                     .removeClass("disabled")
                     .removeAttr("aria-disabled")
-                    .removeAttr("tabindex");
+                    .attr("tabindex", "-1");
             }
 
             const insertedTab = $('#myTabs a:last');
@@ -789,7 +789,7 @@
                 $compareBtn
                     .removeClass("disabled")
                     .removeAttr("aria-disabled")
-                    .removeAttr("tabindex");
+                    .attr("tabindex", "-1");
             }
 
             const insertedTab = $('#myTabs a:last');
@@ -1046,7 +1046,6 @@
 
 
 
-
             <nav class="navbar navbar-expand-lg bg-dark-subtle ">
                 <div class="container-fluid">
                     
@@ -1072,8 +1071,7 @@
                                     <hr class="dropdown-divider"/>
                                     <li>
                                         <a class="dropdown-item"
-                                           asp-controller="Home"
-                                           asp-action="Logout"
+                                           asp-page="/Account/Logout"
                                            asp-route-returnUrl="@returnUrl">Logout</a>
                                     </li>
                                 </ul>
@@ -1094,7 +1092,7 @@
                                         <label for="include" class="col-form-label">Include</label>
                                     </div>
                                     <div class="col-auto">
-                                        <input id="include" class="form-control" type="text" aria-label="exclude" value="@ViewBag.Include"
+                                        <input id="include" class="form-control" type="text" aria-label="exclude" value="@Model.Include"
                                                data-bs-toggle="tooltip" data-bs-placement="bottom" title="Use a comma to separate additional excludes">
                                     </div>
                                 </div>
@@ -1103,21 +1101,13 @@
                             <li class="nav-item ps-3">
                                 <div class="row g-1 align-items-center">
                                     <div class="col-auto">
-                                        <label for="exclude" class="col-form-label">Exclude</label>
+                                        <div class="form-check mt-2">
+                                                                                         <input class="form-check-input" type="checkbox" id="showHistory" @(Model.ShowHistory ? "checked" : "")>
+                                            <label class="form-check-label" for="showHistory">
+                                                Show History
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div class="col-auto">
-                                        <input id="exclude" class="form-control" type="text" aria-label="exclude" value="@ViewBag.Exclude"
-                                               data-bs-toggle="tooltip" data-bs-placement="bottom" title="Use a comma to separate additional excludes">
-                                    </div>
-                                </div>
-                            </li>
-
-                            <li class="nav-item ps-3">
-                                <div class="form-check mt-2">
-                                    <input class="form-check-input" type="checkbox" id="showHistory" @ViewBag.ShowHistory>
-                                    <label class="form-check-label" for="showHistory">
-                                        Show History
-                                    </label>
                                 </div>
                             </li>
 
