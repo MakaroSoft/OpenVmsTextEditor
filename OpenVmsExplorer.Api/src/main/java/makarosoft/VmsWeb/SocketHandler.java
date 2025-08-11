@@ -12,17 +12,23 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import makarosoft.VmsWeb.JwtVerifier.VerifiedToken;
 import makarosoft.vmsExplorer.Engine;
 
 
 class SocketHandler implements Runnable {
+	
+	// todo later inject a singleton	
+	
 	private Socket _socket;
 	private ArrayList<ApiController> _controllers;
-	Logger _logger = LogManager.getLogger(SocketHandler.class);
+	private Logger _logger = LogManager.getLogger(SocketHandler.class);
+	private JwtVerifier _jwtVerifier;
 
-	public SocketHandler(Socket socket, ArrayList<ApiController> controllers) {
+	public SocketHandler(Socket socket, ArrayList<ApiController> controllers, JwtVerifier jwtVerifier) {
 		_socket = socket;
 		_controllers = controllers;
+		_jwtVerifier = jwtVerifier;
 	}
 
 	/**
@@ -47,6 +53,34 @@ class SocketHandler implements Runnable {
 				respond(500, "Unable to parse request", out);
 				return;
 			}
+			
+            String auth = request.getHeader("Authorization");
+            if (auth == null || !auth.startsWith("Bearer ")) {
+                respond(401, "Missing bearer token", out);
+                return;
+            }
+            
+            String token = auth.substring("Bearer ".length()).trim();
+            
+            try {
+                VerifiedToken verifiedToken = _jwtVerifier.verify(token);
+                
+                if (verifiedToken.getRoles() == null) {
+                    respond(403, "Permission Denied.", out);
+                    return;                	
+                }
+                
+                // this is temporary
+                if (!verifiedToken.getRoles().contains("SuperUser")) {
+                    respond(403, "Permission Denied.", out);
+                    return;                	
+                }
+                
+            } catch (SecurityException e) {
+            	respond(401, e.getMessage(), out);
+            	return;
+            }
+            
 
 			boolean foundHandler = false;
 			Response response = new Response(out);
@@ -54,7 +88,7 @@ class SocketHandler implements Runnable {
 			for (ApiController apiController : _controllers) {
 				String path = fixPath(apiController.getPath());
 				Pattern pattern = Pattern.compile("^" + path + "(/[a-z0-9_;\\-\\$\\.]+)*$", Pattern.CASE_INSENSITIVE);
-			    Matcher matcher = pattern.matcher(request.getPath());
+				Matcher matcher = pattern.matcher(request.getPath());
 			    boolean matchFound = matcher.find();
 				if (matchFound) {
 					switch (request.getMethod()) {

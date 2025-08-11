@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.StringTokenizer;
 
 import org.apache.logging.log4j.LogManager;
@@ -114,16 +115,23 @@ public class Request {
 			if (separator == -1) {
 				return false;
 			}
-			_headers.put(headerLine.substring(0, separator), headerLine.substring(separator + 1));
+			
+			// get rid of leading space, if any
+			int add = 0;
+			//String shit = headerLine.substring(separator + 1, separator + 1);
+			if (headerLine.substring(separator + 1, separator + 2).equals(" ")) add++;
+			_headers.put(headerLine.substring(0, separator), headerLine.substring(separator + 1 + add));
 		}
 
 		// TODO should look for host header, Connection: Keep-Alive header,
 		// Content-Transfer-Encoding: chunked
 
 		if (components[1].indexOf("?") == -1) {
-			_path = components[1];
+			String raw = components[1];
+			_path = URLDecoder.decode(raw, "UTF-8");
 		} else {
-			_path = components[1].substring(0, components[1].indexOf("?"));
+			String raw = components[1].substring(0, components[1].indexOf("?"));
+			_path = URLDecoder.decode(raw, "UTF-8");			
 			parseQueryParameters(components[1].substring(components[1].indexOf("?") + 1));
 		}
 
