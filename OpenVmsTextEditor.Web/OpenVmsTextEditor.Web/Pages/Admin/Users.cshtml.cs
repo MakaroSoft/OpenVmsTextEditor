@@ -91,6 +91,15 @@ namespace OpenVmsTextEditor.Web.Pages.Admin
             var currentRoles = await _userManager.GetRolesAsync(user);
             var desiredRoles = (selectedRoles ?? new List<string>()).Where(r => allRoles.Contains(r)).Distinct().ToList();
 
+            // Prevent removing Admin from your own account
+            var currentUserId = _userManager.GetUserId(User);
+            if (string.Equals(currentUserId, userId, StringComparison.Ordinal) && currentRoles.Contains("Admin") && !desiredRoles.Contains("Admin"))
+            {
+                ModelState.AddModelError(string.Empty, "You cannot remove the Admin role from your own account.");
+                await OnGetAsync(ct);
+                return Page();
+            }
+
             var rolesToAdd = desiredRoles.Except(currentRoles).ToList();
             var rolesToRemove = currentRoles.Except(desiredRoles).ToList();
 
