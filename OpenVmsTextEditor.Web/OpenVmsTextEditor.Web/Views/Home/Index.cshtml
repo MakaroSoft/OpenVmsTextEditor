@@ -4,7 +4,7 @@
 @model OpenVmsTextEditor.Domain.Models.VmsEditorModel
 @{
     ViewBag.Title = "OpenVmsEditor";
-    Layout = "_Layout";
+    Layout = "_EditorLayout";
     var returnUrl = $"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}";
     var username = User.Identity?.Name ?? "Guest";
 }
