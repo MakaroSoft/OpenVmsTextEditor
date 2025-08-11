@@ -59,40 +59,15 @@ namespace OpenVmsTextEditor.Web.Pages
             }
             catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.Forbidden)
             {
-                // Logout
                 await _signInManager.SignOutAsync();
-
-                // Redirect to custom error page with message
                 return RedirectToPage("/Error/NoPermissions");
             }
             catch (Exception e)
             {
-                // Logout
                 await _signInManager.SignOutAsync();
                 _logger.LogError(e, e.Message);
                 throw;
             }
-        }
-
-        [HttpPost("GetFolder")]
-        public async Task<IActionResult> OnPostGetFolderAsync(string? include, string? exclude, bool showHistory, string? path, CancellationToken ct)
-        {
-            _logger.LogDebug("GetFolder(include={include}, exclude={exclude}, showHistory={showHistory}, startPath={path})", include, exclude, showHistory, path);
-            return new JsonResult(await _pageInfoService.GetPageInfoAsync(include, exclude, showHistory, path, ct));
-        }
-
-        [HttpPost("GetFile")]
-        public async Task<IActionResult> OnPostGetFileAsync(string path, CancellationToken ct)
-        {
-            _logger.LogDebug("GetFile(path={path})", path);
-            return new JsonResult(await _operatingSystemIo.GetFileAsync(path, ct));
-        }
-
-        [HttpPost("SaveFile")]
-        public async Task<IActionResult> OnPostSaveFileAsync(string path, [FromBody] string fileData, CancellationToken ct)
-        {
-            _logger.LogDebug("SaveFile(path={path})", path);
-            return new JsonResult(await _operatingSystemIo.SaveFileAsync(path, fileData, ct));
         }
     }
 }

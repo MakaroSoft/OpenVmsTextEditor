@@ -142,6 +142,7 @@
 
 
     <script>
+        const apiBase = '@Url.Content("~/api/explorer")';
         $.views.converters("modCode",
             function(val) {
                 if (val === true) {
@@ -853,7 +854,7 @@
                 showLoading("#two");
                 $.ajax({
                     type: 'POST',
-                    url: `${basePath}/saveFile?path=${file}`,
+                    url: `${apiBase}/save?path=${encodeURIComponent(file)}`,
                     dataType: 'text',
                     contentType: "application/json",
                     data: data,
@@ -905,7 +906,7 @@
 
 
         async function loadFileAsync(file) {
-            const response = await fetch(`${basePath}/GetFile?path=${encodeURIComponent(file)}`, {
+            const response = await fetch(`${apiBase}/file?path=${encodeURIComponent(file)}`, {
                 method: 'POST'
             });
 
@@ -923,7 +924,7 @@
                 showLoading("#two");
                 $.ajax({
                     type: 'POST',
-                    url: `${basePath}/GetFile?path=${file}`,
+                    url: `${apiBase}/file?path=${encodeURIComponent(file)}`,
                     dataType: 'text',
                     success: function(data, status, xhr) {
                         hideLoading("#two");
@@ -992,7 +993,7 @@
 
                 $.ajax({
                     type: 'POST',
-                    url: `${basePath}/GetFolder?include=${include}&exclude=${exclude}&showHistory=${showHistory}&path=${folder}`,
+                    url: `${apiBase}/folder?include=${encodeURIComponent(include)}&exclude=${encodeURIComponent(exclude)}&showHistory=${showHistory}&path=${encodeURIComponent(folder)}`,
                     dataType: 'json',
                     success: function(data, status, xhr) {
                         hideLoading("#one");
