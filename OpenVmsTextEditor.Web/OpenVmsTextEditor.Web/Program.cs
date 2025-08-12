@@ -187,30 +187,4 @@ static async Task SeedAsync(IServiceProvider services, ConfigurationManager conf
             await roleMgr.CreateAsync(new IdentityRole(r));
         }
     }
-
-    var adminEmail = configuration["Seed:AdminEmail"];
-    var adminPassword = configuration["Seed:AdminPassword"];
-
-    if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword)) return;
-    
-    // Create admin if it doesn't exist
-    var admin = await userMgr.FindByEmailAsync(adminEmail);
-    if (admin == null)
-    {
-        admin = new IdentityUser
-        {
-            UserName = adminEmail,
-            Email = adminEmail,
-            EmailConfirmed = true
-        };
-
-        var createResult = await userMgr.CreateAsync(admin, adminPassword);
-        if (!createResult.Succeeded)
-        {
-            throw new InvalidOperationException(
-                $"Failed to create admin user: {string.Join(", ", createResult.Errors.Select(e => e.Description))}");
-        }
-
-        await userMgr.AddToRolesAsync(admin, ["Admin", "SuperUser"]);
-    }
 }
