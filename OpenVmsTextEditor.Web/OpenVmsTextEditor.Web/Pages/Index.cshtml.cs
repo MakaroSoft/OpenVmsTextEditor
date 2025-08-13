@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
@@ -18,7 +19,6 @@ namespace OpenVmsTextEditor.Web.Pages
     public class IndexModel : PageModel
     {
         private readonly ILogger<IndexModel> _logger;
-        private readonly IOperatingSystemIo _operatingSystemIo;
         private readonly IPageInfoService _pageInfoService;
         private readonly SignInManager<IdentityUser> _signInManager;
 
@@ -28,7 +28,6 @@ namespace OpenVmsTextEditor.Web.Pages
             SignInManager<IdentityUser> signInManager)
         {
             _logger = logger;
-            _operatingSystemIo = operatingSystemIo;
             _pageInfoService = pageInfoService;
             _signInManager = signInManager;
         }
@@ -45,7 +44,12 @@ namespace OpenVmsTextEditor.Web.Pages
         [BindProperty(SupportsGet = true)]
         public string? StartPath { get; set; }
 
-        public VmsEditorModel VmsEditor { get; set; } = new VmsEditorModel();
+        public VmsEditorModel VmsEditor { get; set; } = new VmsEditorModel
+        {
+            Disks = new List<string>(),
+            Files = new List<File>(),
+            BreadCrumb = new List<string>()
+        };
 
         public async Task<IActionResult> OnGetAsync(CancellationToken ct)
         {

@@ -2,6 +2,6 @@
 
 public class VmsEditorSettings
 {
-    public string VmsExplorerApiUrl { get; set; }
-    public string OperatingSystemIoTypeName { get; set; }
+    public required string VmsExplorerApiUrl { get; init; }
+    public required string OperatingSystemIoTypeName { get; init; }
 }
