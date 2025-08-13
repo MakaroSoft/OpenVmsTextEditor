@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.StringTokenizer;
 
@@ -75,7 +76,14 @@ public class Request {
 		for (String parameter : queryString.split("&")) {
 			int separator = parameter.indexOf('=');
 			if (separator > -1) {
-				_queryParameters.put(parameter.substring(0, separator), parameter.substring(separator + 1));
+				String key = parameter.substring(0, separator);
+				String value = parameter.substring(separator + 1);
+				try {
+					_queryParameters.put(URLDecoder.decode(key, "UTF-8"), URLDecoder.decode(value,"UTF-8"));
+				} catch (UnsupportedEncodingException e) {
+					_logger.error("Unable to decode: key = {}, value = {}", key, value);
+					_queryParameters.put(key, value);
+				}
 			} else {
 				_queryParameters.put(parameter, null);
 			}
