@@ -83,7 +83,7 @@
                                             var disableAdminForSelf = isSelf && isAdminRole;
                                             <div class="col-6">
                                                 <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="selectedRoles" value="@role" id="@($"{modalId}_{role}")" @(isChecked ? "checked" : null) @(disableAdminForSelf ? "disabled" : null) />
+                                                    <input class="form-check-input role-checkbox" data-modal-id="@modalId" type="checkbox" name="selectedRoles" value="@role" id="@($"{modalId}_{role}")" @(isChecked ? "checked" : null) @(disableAdminForSelf ? "disabled" : null) />
                                                     <label class="form-check-label" for="@($"{modalId}_{role}")" title="@(disableAdminForSelf ? "You cannot remove Admin from your own account" : null)">@role</label>
                                                     @* Preserve Admin selection for self since disabled inputs are not submitted *@
                                                     @if (disableAdminForSelf && isChecked)
@@ -93,6 +93,13 @@
                                                 </div>
                                             </div>
                                         }
+                                    </div>
+
+                                    <div class="mt-3 allowed-folders-container" id="@($"{modalId}_AllowedFolders")" style="display:none;">
+                                        <label class="form-label">Allowed folders (one per line or comma-separated) for 'User' role only</label>
+                                        <textarea class="form-control" name="allowedFolders" rows="4" placeholder="DISK1:[DIR]
+DISK2:[HOME.USER]">@string.Join("\n", u.AllowedFolders)</textarea>
+                                        <div class="form-text">Required when only 'User' role is selected.</div>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -115,6 +122,16 @@
     <script>
         const _notification = new MakaroSoft.CommonNotification();
         const _dialog = new MakaroSoft.CommonDialog({ required: true });
+        function updateAllowedFoldersVisibility(modalId) {
+            const container = document.getElementById(`${modalId}_AllowedFolders`);
+            if (!container) return;
+            const checkboxes = document.querySelectorAll(`#${modalId} input.role-checkbox`);
+            let selected = [];
+            checkboxes.forEach(cb => { if (cb.checked) selected.push(cb.value); });
+            const userOnly = selected.length === 1 && selected[0].toLowerCase() === 'user';
+            container.style.display = userOnly ? 'block' : 'none';
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             // Show TempData status message via notification
             const statusMessage = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["StatusMessage"]));
@@ -134,6 +151,18 @@
                         if (choice === 'Delete') {
                             form.submit();
                         }
+                    });
+                });
+            });
+
+            // Initialize allowed folders visibility for each modal
+            document.querySelectorAll('.modal').forEach(function (modal) {
+                const modalId = modal.getAttribute('id');
+                if (!modalId) return;
+                updateAllowedFoldersVisibility(modalId);
+                modal.querySelectorAll('input.role-checkbox').forEach(function (cb) {
+                    cb.addEventListener('change', function () {
+                        updateAllowedFoldersVisibility(modalId);
                     });
                 });
             });

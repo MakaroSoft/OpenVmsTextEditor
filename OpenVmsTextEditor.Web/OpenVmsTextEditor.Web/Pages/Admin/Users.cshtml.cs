@@ -36,6 +36,7 @@ namespace OpenVmsTextEditor.Web.Pages.Admin
             public string? UserName { get; set; }
             public List<string> Roles { get; set; } = new();
             public bool IsActivated { get; set; }
+            public List<string> AllowedFolders { get; set; } = new();
         }
 
         public string? CurrentUserId { get; private set; }
@@ -61,20 +62,26 @@ namespace OpenVmsTextEditor.Web.Pages.Admin
             foreach (var user in allUsers)
             {
                 var roles = await _userManager.GetRolesAsync(user);
+                var claims = await _userManager.GetClaimsAsync(user);
                 result.Add(new UserWithRolesViewModel
                 {
                     UserId = user.Id,
                     Email = user.Email,
                     UserName = user.UserName,
                     Roles = roles.OrderBy(r => r).ToList(),
-                    IsActivated = user.EmailConfirmed
+                    IsActivated = user.EmailConfirmed,
+                    AllowedFolders = claims
+                        .Where(c => string.Equals(c.Type, "AllowedFolder", StringComparison.Ordinal))
+                        .Select(c => c.Value)
+                        .OrderBy(v => v)
+                        .ToList()
                 });
             }
 
             Users = result;
         }
 
-        public async Task<IActionResult> OnPostUpdateRolesAsync(string userId, List<string>? selectedRoles, CancellationToken ct)
+        public async Task<IActionResult> OnPostUpdateRolesAsync(string userId, List<string>? selectedRoles, string? allowedFolders, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(userId))
             {
@@ -122,6 +129,56 @@ namespace OpenVmsTextEditor.Web.Pages.Admin
                     ModelState.AddModelError(string.Empty, string.Join("; ", removeResult.Errors.Select(e => e.Description)));
                     await OnGetAsync(ct);
                     return Page();
+                }
+            }
+
+            // If a user has only the 'User' role, they must have a list of allowed folders.
+            var onlyUserRole = desiredRoles.Count == 1 && desiredRoles.Contains("User");
+            if (onlyUserRole)
+            {
+                var parsedFolders = (allowedFolders ?? string.Empty)
+                    .Replace("\r", string.Empty)
+                    .Split(new[] { '\n', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(f => f.Trim())
+                    .Where(f => !string.IsNullOrWhiteSpace(f))
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList();
+
+                if (parsedFolders.Count == 0)
+                {
+                    ModelState.AddModelError(string.Empty, "Users with only the 'User' role must have at least one allowed folder.");
+                    await OnGetAsync(ct);
+                    return Page();
+                }
+
+                var existingClaims = await _userManager.GetClaimsAsync(user);
+                var allowedFolderClaims = existingClaims.Where(c => string.Equals(c.Type, "AllowedFolder", StringComparison.Ordinal)).ToList();
+
+                // Remove claims no longer present
+                var claimsToRemove = allowedFolderClaims.Where(c => !parsedFolders.Contains(c.Value, StringComparer.Ordinal)).ToList();
+                if (claimsToRemove.Count > 0)
+                {
+                    var rc = await _userManager.RemoveClaimsAsync(user, claimsToRemove);
+                    if (!rc.Succeeded)
+                    {
+                        ModelState.AddModelError(string.Empty, string.Join("; ", rc.Errors.Select(e => e.Description)));
+                        await OnGetAsync(ct);
+                        return Page();
+                    }
+                }
+
+                // Add new claims
+                var existingValues = allowedFolderClaims.Select(c => c.Value).ToHashSet(StringComparer.Ordinal);
+                var claimsToAdd = parsedFolders.Where(v => !existingValues.Contains(v)).Select(v => new System.Security.Claims.Claim("AllowedFolder", v)).ToList();
+                if (claimsToAdd.Count > 0)
+                {
+                    var ac = await _userManager.AddClaimsAsync(user, claimsToAdd);
+                    if (!ac.Succeeded)
+                    {
+                        ModelState.AddModelError(string.Empty, string.Join("; ", ac.Errors.Select(e => e.Description)));
+                        await OnGetAsync(ct);
+                        return Page();
+                    }
                 }
             }
 
