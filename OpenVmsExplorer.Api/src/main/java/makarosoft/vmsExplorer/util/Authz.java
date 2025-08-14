@@ -24,21 +24,36 @@ public final class Authz {
         if (token == null) return result;
         JWTClaimsSet raw = token.getRaw();
         if (raw == null) return result;
-        try {
-            // AllowedFolder may be multiple claim entries; Nimbus stores multi-valued custom claims
-            // inconsistently, so try both list and single string
-            List<String> values = raw.getStringListClaim("AllowedFolder");
-            if (values != null) {
-                for (String v : values) if (v != null && !v.isEmpty()) result.add(v);
-            } else {
-                String one = raw.getStringClaim("AllowedFolder");
-                if (one != null && !one.isEmpty()) result.add(one);
-            }
-        } catch (ParseException ignored) {
+       
+        // AllowedFolder may be multiple claim entries; Nimbus stores multi-valued custom claims
+        // inconsistently, so try both list and single string
+        List<String> values = getAllowedFolderClaimAsList(raw);
+        if (values != null) {
+            for (String v : values) if (v != null && !v.isEmpty()) result.add(v);
+        } else {
+            String one = getAllowedFolderClaimAsOne(raw);
+            if (one != null && !one.isEmpty()) result.add(one);
         }
+           
         return result;
     }
+   
+    private static List<String> getAllowedFolderClaimAsList(JWTClaimsSet raw) {
+        try {
+          return raw.getStringListClaim("AllowedFolder");
+       } catch (ParseException ignore) {
+          return null;
+       }
+    }
 
+    private static String getAllowedFolderClaimAsOne(JWTClaimsSet raw) {
+        try {
+          return raw.getStringClaim("AllowedFolder");
+       } catch (ParseException ignore) {
+          return null;
+       }
+    }
+   
     public static boolean isPathAllowed(String pathNormalized, List<String> allowed) {
         if (allowed == null || allowed.isEmpty()) return false;
         // Normalize trailing slash handling for comparison
@@ -86,5 +101,3 @@ public final class Authz {
         return t;
     }
 }
-
-
