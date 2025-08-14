@@ -4,7 +4,7 @@ namespace OpenVmsTextEditor.Domain.Models;
 
 public class VmsEditorModel
 {
-    public IList<string> Disks { get; set; }
-    public IList<File> Files { get; set; }
-    public IList<string> BreadCrumb { get; set; }
+    public required IList<string> Disks { get; init; }
+    public required IList<File> Files { get; init; }
+    public required IList<string> BreadCrumb { get; init; }
 }

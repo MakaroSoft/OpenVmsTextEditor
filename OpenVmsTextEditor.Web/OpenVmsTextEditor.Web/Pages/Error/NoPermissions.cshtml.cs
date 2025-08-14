@@ -14,12 +14,9 @@ namespace OpenVmsTextEditor.Web.Pages.Error
             _logger = logger;
         }
 
-        public string? Message { get; private set; }
-
-        public void OnGet(string? message)
+        public void OnGet()
         {
-            _logger.LogDebug("NoPermissions({message})", message);
-            Message = message;
+            _logger.LogDebug("No Permission");
         }
     }
 }

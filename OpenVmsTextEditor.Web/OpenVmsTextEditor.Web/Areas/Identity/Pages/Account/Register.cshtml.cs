@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 
 namespace OpenVmsTextEditor.Web.Areas.Identity.Pages.Account
 {
@@ -120,11 +121,25 @@ namespace OpenVmsTextEditor.Web.Areas.Identity.Pages.Account
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+
+                // Determine if this will be the first user (no users yet)
+                var noUsersExist = !await _userManager.Users.AnyAsync();
+
                 var result = await _userManager.CreateAsync(user, Input.Password);
 
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
+
+                    // If first user, grant Admin and SuperUser roles
+                    if (noUsersExist)
+                    {
+                        var grantResult = await _userManager.AddToRolesAsync(user, new[] { "Admin", "SuperUser" });
+                        if (!grantResult.Succeeded)
+                        {
+                            _logger.LogError("Failed to grant initial Admin/SuperUser roles to first user {Email}: {Errors}", Input.Email, string.Join(", ", grantResult.Errors.Select(e => e.Description)));
+                        }
+                    }
 
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);

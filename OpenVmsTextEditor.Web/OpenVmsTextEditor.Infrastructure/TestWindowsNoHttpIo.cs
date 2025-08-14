@@ -33,7 +33,7 @@ public class TestWindowsNoHttpIo : IOperatingSystemIo
     {
         var index = diskName.IndexOf(':');
         if (index == -1) return diskName;
-        return diskName.Substring(0, index);
+        return diskName.Substring(0, index + 1);
     }
 
     public async Task<IList<File>> GetDirectoryFilesAsync(string? include, string? exclude, bool showHistory, string fullFolderName,
@@ -113,17 +113,18 @@ internal class FileFormatter
         var firstSlash = folder.IndexOf("/", StringComparison.Ordinal);
         if (firstSlash == -1)
         {
-            folder += @":\";
+            // "C:" -> "C:\\"
+            if (!folder.EndsWith(":")) return folder;
+            folder += @"\";
         }
         else
         {
-            if (firstSlash != 1) return folder;
-            // we are windows
+            // Expect drive:/path format for Windows
+            var colon = folder.IndexOf(":", StringComparison.Ordinal);
+            if (colon != 1) return folder;
             var stringBuilder = new StringBuilder(folder);
-            stringBuilder.Replace("/", @":\", firstSlash,firstSlash);
-
+            stringBuilder.Replace(":/", @":\", colon, 2);
             folder = stringBuilder.ToString();
-
             folder = folder.Replace("/", @"\");
         }
         return folder;

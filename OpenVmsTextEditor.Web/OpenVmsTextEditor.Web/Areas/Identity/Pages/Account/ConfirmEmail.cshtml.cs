@@ -35,9 +35,9 @@ namespace OpenVmsTextEditor.Web.Areas.Identity.Pages.Account
         [TempData]
         public string StatusMessage { get; set; }
         
-        public string? ReturnUrl { get; private set; }
+        public string ReturnUrl { get; private set; }
         
-        public async Task<IActionResult> OnGetAsync(string userId, string code, string? returnUrl = null)
+        public async Task<IActionResult> OnGetAsync(string userId, string code, string returnUrl = null)
         {
             if (userId == null || code == null)
             {
@@ -67,7 +67,7 @@ namespace OpenVmsTextEditor.Web.Areas.Identity.Pages.Account
                     var subject = "User activated account from the OpenVmsTextEditor";
                     var loginUrl = Url.Page("/Account/Login", pageHandler: null, values: new { area = "Identity" }, protocol: Request.Scheme);
                     var body = $"User {user.Email} confirmed their email at {DateTime.UtcNow:u}.<br/>" +
-                               $"Login to the web app: <a href='{HtmlEncoder.Default.Encode(loginUrl)}'>Open login</a>";
+                               $"Login to the web app: <a href='{HtmlEncoder.Default.Encode(loginUrl ?? string.Empty)}'>Open login</a>";
                     await _emailSender.SendEmailAsync(adminEmail, subject, body);
                 }
             }

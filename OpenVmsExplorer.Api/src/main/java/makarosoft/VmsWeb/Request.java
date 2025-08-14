@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.StringTokenizer;
 
@@ -18,6 +19,7 @@ public class Request {
 	private Map<String, String> _queryParameters = new HashMap<String, String>();
 	private BufferedReader _in;
 	Logger _logger = LogManager.getLogger(Request.class);
+	private JwtVerifier.VerifiedToken _verifiedToken;
 
 	public Request(BufferedReader in) {
 		_in = in;
@@ -62,6 +64,13 @@ public class Request {
 		return _fullUrl;
 	}
 
+	public void setVerifiedToken(JwtVerifier.VerifiedToken token) {
+		_verifiedToken = token;
+	}
+	public JwtVerifier.VerifiedToken getVerifiedToken() {
+		return _verifiedToken;
+	}
+
 	// TODO support mutli-value headers
 	public String getHeader(String headerName) {
 		return _headers.get(headerName);
@@ -75,7 +84,14 @@ public class Request {
 		for (String parameter : queryString.split("&")) {
 			int separator = parameter.indexOf('=');
 			if (separator > -1) {
-				_queryParameters.put(parameter.substring(0, separator), parameter.substring(separator + 1));
+				String key = parameter.substring(0, separator);
+				String value = parameter.substring(separator + 1);
+				try {
+					_queryParameters.put(URLDecoder.decode(key, "UTF-8"), URLDecoder.decode(value,"UTF-8"));
+				} catch (UnsupportedEncodingException e) {
+					_logger.error("Unable to decode: key = {}, value = {}", key, value);
+					_queryParameters.put(key, value);
+				}
 			} else {
 				_queryParameters.put(parameter, null);
 			}
@@ -85,7 +101,7 @@ public class Request {
 	public boolean parse() throws IOException {
 		String initialLine = _in.readLine();
 		if (initialLine == null) {
-			_logger.debug("*************: {}", initialLine);
+			_logger.debug("*************: nothing to parse");
 			return false;
 		}
 		_logger.debug(initialLine);
@@ -106,7 +122,7 @@ public class Request {
 		// Consume headers
 		while (true) {
 			String headerLine = _in.readLine();
-			_logger.debug(headerLine);
+			_logger.trace(headerLine);
 			if (headerLine.length() == 0) {
 				break;
 			}

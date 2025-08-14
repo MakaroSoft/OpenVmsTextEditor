@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Authorization;
@@ -18,7 +20,6 @@ namespace OpenVmsTextEditor.Web.Pages
     public class IndexModel : PageModel
     {
         private readonly ILogger<IndexModel> _logger;
-        private readonly IOperatingSystemIo _operatingSystemIo;
         private readonly IPageInfoService _pageInfoService;
         private readonly SignInManager<IdentityUser> _signInManager;
 
@@ -28,7 +29,6 @@ namespace OpenVmsTextEditor.Web.Pages
             SignInManager<IdentityUser> signInManager)
         {
             _logger = logger;
-            _operatingSystemIo = operatingSystemIo;
             _pageInfoService = pageInfoService;
             _signInManager = signInManager;
         }
@@ -45,7 +45,12 @@ namespace OpenVmsTextEditor.Web.Pages
         [BindProperty(SupportsGet = true)]
         public string? StartPath { get; set; }
 
-        public VmsEditorModel VmsEditor { get; set; } = new VmsEditorModel();
+        public VmsEditorModel VmsEditor { get; set; } = new VmsEditorModel
+        {
+            Disks = new List<string>(),
+            Files = new List<File>(),
+            BreadCrumb = new List<string>()
+        };
 
         public async Task<IActionResult> OnGetAsync(CancellationToken ct)
         {
@@ -59,8 +64,16 @@ namespace OpenVmsTextEditor.Web.Pages
             }
             catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.Forbidden)
             {
+                // If user has no roles yet, show Almost There; else show No Permission
+                var roles = User.FindAll(System.Security.Claims.ClaimTypes.Role);
+                bool hasAnyRole = roles.Any();
+
+                if (hasAnyRole)
+                {
+                    return RedirectToPage("/Error/NoPermissions");
+                }
                 await _signInManager.SignOutAsync();
-                return RedirectToPage("/Error/NoPermissions");
+                return RedirectToPage("/Error/AlmostThere");
             }
             catch (Exception e)
             {

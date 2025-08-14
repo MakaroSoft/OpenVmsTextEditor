@@ -1090,14 +1090,25 @@
                                 </ul>
                             </li>
 
-
                             <li class="nav-item ps-3">
                                 <div class="row g-1 align-items-center">
                                     <div class="col-auto">
                                         <label for="include" class="col-form-label">Include</label>
                                     </div>
                                     <div class="col-auto">
-                                        <input id="include" class="form-control" type="text" aria-label="exclude" value="@Model.Include"
+                                        <input id="include" class="form-control" type="text" aria-label="include" value="@Model.Include"
+                                               data-bs-toggle="tooltip" data-bs-placement="bottom" title="Use a comma to separate additional includes">
+                                    </div>
+                                </div>
+                            </li>
+
+                            <li class="nav-item ps-3">
+                                <div class="row g-1 align-items-center">
+                                    <div class="col-auto">
+                                        <label for="exclude" class="col-form-label">Exclude</label>
+                                    </div>
+                                    <div class="col-auto">
+                                        <input id="exclude" class="form-control" type="text" aria-label="exclude" value="@Model.Exclude"
                                                data-bs-toggle="tooltip" data-bs-placement="bottom" title="Use a comma to separate additional excludes">
                                     </div>
                                 </div>
@@ -1107,7 +1118,7 @@
                                 <div class="row g-1 align-items-center">
                                     <div class="col-auto">
                                         <div class="form-check mt-2">
-                                                                                         <input class="form-check-input" type="checkbox" id="showHistory" @(Model.ShowHistory ? "checked" : "")>
+                                            <input class="form-check-input" type="checkbox" id="showHistory" @(Model.ShowHistory ? "checked" : "")>
                                             <label class="form-check-label" for="showHistory">
                                                 Show History
                                             </label>
