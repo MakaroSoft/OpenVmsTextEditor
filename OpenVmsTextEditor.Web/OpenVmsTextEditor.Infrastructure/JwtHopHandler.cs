@@ -44,6 +44,13 @@ public sealed class JwtHopHandler : DelegatingHandler
                 .Select(c => new Claim(ClaimTypes.Role, c.Value))
         );
         
+        // add AllowedFolder claims (one per folder)
+        var allowedFolders = principal.FindAll("AllowedFolder").Select(c => c.Value).Distinct(StringComparer.Ordinal);
+        foreach (var folder in allowedFolders)
+        {
+            claims.Add(new Claim("AllowedFolder", folder));
+        }
+        
         var creds = new SigningCredentials(key, SecurityAlgorithms.RsaSha256);
         var jwt = new JwtSecurityToken(opts.Issuer, opts.Audience, claims, now.UtcDateTime, now.AddMinutes(5).UtcDateTime, creds);
         if (!string.IsNullOrEmpty(opts.KeyId)) jwt.Header["kid"] = opts.KeyId;

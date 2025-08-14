@@ -19,6 +19,7 @@ public class Request {
 	private Map<String, String> _queryParameters = new HashMap<String, String>();
 	private BufferedReader _in;
 	Logger _logger = LogManager.getLogger(Request.class);
+	private JwtVerifier.VerifiedToken _verifiedToken;
 
 	public Request(BufferedReader in) {
 		_in = in;
@@ -61,6 +62,13 @@ public class Request {
 
 	public String getFullUrl() {
 		return _fullUrl;
+	}
+
+	public void setVerifiedToken(JwtVerifier.VerifiedToken token) {
+		_verifiedToken = token;
+	}
+	public JwtVerifier.VerifiedToken getVerifiedToken() {
+		return _verifiedToken;
 	}
 
 	// TODO support mutli-value headers
