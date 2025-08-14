@@ -11,9 +11,9 @@ import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
 import makarosoft.VmsWeb.JwtVerifier.VerifiedToken;
-import makarosoft.vmsExplorer.Engine;
 
 
 class SocketHandler implements Runnable {
@@ -65,6 +65,10 @@ class SocketHandler implements Runnable {
             try {
                 VerifiedToken verifiedToken = _jwtVerifier.verify(token);
                 request.setVerifiedToken(verifiedToken);
+                // populate ThreadContext for logging pattern
+                String userName = verifiedToken.getName();
+                if (userName == null || userName.trim().isEmpty()) userName = verifiedToken.getSub();
+                if (userName != null) org.apache.logging.log4j.ThreadContext.put("user", userName);
             } catch (SecurityException e) {
             	respond(401, e.getMessage(), out);
             	return;
@@ -121,7 +125,8 @@ class SocketHandler implements Runnable {
 				if (in != null) {
 					in.close();
 				}
-				_socket.close();
+                _socket.close();
+                ThreadContext.clearAll();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

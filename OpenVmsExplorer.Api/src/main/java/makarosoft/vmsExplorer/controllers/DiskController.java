@@ -29,24 +29,18 @@ public class DiskController extends ApiController {
 				return;
 			}
 			
-            String name = null;
 			StringBuilder sb = new StringBuilder();
-            if (name == null) {
-                ArrayList<String> disks = getDisks();
-                makarosoft.VmsWeb.JwtVerifier.VerifiedToken token = request.getVerifiedToken();
-                if (Authz.isUserOnlyRole(token)) {
-                    java.util.Set<String> allowed = Authz.allowedDisks(Authz.getAllowedFolders(token));
-                    disks.removeIf(d -> !allowed.contains(parse(d).toLowerCase()));
-                }
 
-				Gson gson = new Gson();
-				String json = gson.toJson(disks);
-				sb.append(json);
+        	ArrayList<String> disks = getDisks();
+            makarosoft.VmsWeb.JwtVerifier.VerifiedToken token = request.getVerifiedToken();
+            if (Authz.isUserOnlyRole(token)) {
+                java.util.Set<String> allowed = Authz.allowedDisks(Authz.getAllowedFolders(token));
+                disks.removeIf(d -> !allowed.contains(parse(d).toLowerCase()));
+            }
 
-			} else {
-				// TODO to handle other shit
-				sb.append("[]");
-			}
+			Gson gson = new Gson();
+			String json = gson.toJson(disks);
+			sb.append(json);
 
 			response.setResponseCode(200, "OK");
 			response.addHeader("Content-Type", "application/json");

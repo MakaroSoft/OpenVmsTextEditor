@@ -101,7 +101,7 @@ public class Request {
 	public boolean parse() throws IOException {
 		String initialLine = _in.readLine();
 		if (initialLine == null) {
-			_logger.debug("*************: {}", initialLine);
+			_logger.debug("*************: nothing to parse");
 			return false;
 		}
 		_logger.debug(initialLine);
@@ -122,7 +122,7 @@ public class Request {
 		// Consume headers
 		while (true) {
 			String headerLine = _in.readLine();
-			_logger.debug(headerLine);
+			_logger.trace(headerLine);
 			if (headerLine.length() == 0) {
 				break;
 			}

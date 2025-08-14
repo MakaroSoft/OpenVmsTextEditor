@@ -6,13 +6,12 @@
         <!-- Console appender configuration -->
         <Console name="console" target="SYSTEM_OUT">
               <PatternLayout>
-                  <Pattern>%d{yyyy-MM-dd HH:mm:ss} %-5p %m%n</Pattern>
+                  <Pattern>%d{yyyy-MM-dd HH:mm:ss} %-5p %X{user} %m%n</Pattern>
               </PatternLayout>
         </Console>
 
     </Appenders>
-    <Loggers
-        <!-- Root logger referring to console appender -->
+    <Loggers>
         <Root level="info" additivity="false">
             <AppenderRef ref="console" />
         </Root>
