@@ -61,7 +61,7 @@ public class DiskController extends ApiController {
 		// for each pathname in pathname array
 		for (File path : paths) {
             String pathName = parse(path.getAbsolutePath());
-			disks.add(pathName);
+			disks.add(pathName.toLowerCase());
 		}
 		return disks;
 	}
