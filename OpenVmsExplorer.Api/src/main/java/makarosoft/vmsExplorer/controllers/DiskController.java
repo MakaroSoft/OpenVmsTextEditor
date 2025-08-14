@@ -60,17 +60,17 @@ public class DiskController extends ApiController {
 
 		// for each pathname in pathname array
 		for (File path : paths) {
-			String pathName = parse(path.getAbsolutePath());
+            String pathName = parse(path.getAbsolutePath());
 			disks.add(pathName);
 		}
 		return disks;
 	}
 
-	private String parse(String text) {
-		int index = text.indexOf(":");
-		if (index != -1)
-			text = text.substring(0, index);
-		if (text.startsWith("/")) text = text.substring(1); // VMS Disks start with a slash for some reason
-		return text;
-	}
+    private String parse(String text) {
+        int index = text.indexOf(":");
+        if (index != -1) text = text.substring(0, index + 1); // keep trailing ':'
+        if (text.startsWith("/")) text = text.substring(1); // VMS Disks start with a slash for some reason
+        if (!text.endsWith(":")) text = text + ":"; // ensure colon suffix for consistency
+        return text;
+    }
 }

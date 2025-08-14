@@ -87,7 +87,7 @@ class SocketHandler implements Runnable {
 			
 			for (ApiController apiController : _controllers) {
 				String path = fixPath(apiController.getPath());
-				Pattern pattern = Pattern.compile("^" + path + "(/[a-z0-9_;\\-\\$\\.]+)*$", Pattern.CASE_INSENSITIVE);
+                Pattern pattern = Pattern.compile("^" + path + "(/[a-z0-9_:;\\-\\$\\.]+)*$", Pattern.CASE_INSENSITIVE);
 				Matcher matcher = pattern.matcher(request.getPath());
 			    boolean matchFound = matcher.find();
 				if (matchFound) {

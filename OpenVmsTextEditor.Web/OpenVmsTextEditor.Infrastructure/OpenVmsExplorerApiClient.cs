@@ -44,7 +44,7 @@ public class OpenVmsExplorerApiClient : IOpenVmsExplorerApiClient
     {
         _http.DefaultRequestHeaders.Clear();
         _http.DefaultRequestHeaders.Add("accept", "text/plain");
-        var url = $"/api/file/{fullFileName}";
+        var url = $"/api/file/{Uri.EscapeDataString(fullFileName)}";
         var absolute = _http.BaseAddress != null ? new Uri(_http.BaseAddress, url) : new Uri(url, UriKind.RelativeOrAbsolute);
         _logger.LogDebug("GET {RequestUri}", absolute);
         return await _http.GetAsync(url, ct);
@@ -59,7 +59,7 @@ public class OpenVmsExplorerApiClient : IOpenVmsExplorerApiClient
         var dflt = Encoding.Default;
         var utfBytes = dflt.GetBytes(fileData);
         var isoBytes = Encoding.Convert(dflt, iso, utfBytes);
-        var url = $"/api/file/{fullFileName}";
+        var url = $"/api/file/{Uri.EscapeDataString(fullFileName)}";
         var absolute = _http.BaseAddress != null ? new Uri(_http.BaseAddress, url) : new Uri(url, UriKind.RelativeOrAbsolute);
         _logger.LogDebug("POST {RequestUri}", absolute);
         return await _http.PostAsync(url, new ByteArrayContent(isoBytes), ct);

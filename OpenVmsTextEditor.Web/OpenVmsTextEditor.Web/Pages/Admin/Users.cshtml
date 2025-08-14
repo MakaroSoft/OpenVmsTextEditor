@@ -97,8 +97,8 @@
 
                                     <div class="mt-3 allowed-folders-container" id="@($"{modalId}_AllowedFolders")" style="display:none;">
                                         <label class="form-label">Allowed folders (one per line or comma-separated) for 'User' role only</label>
-                                        <textarea class="form-control" name="allowedFolders" rows="4" placeholder="DISK1:[DIR]
-DISK2:[HOME.USER]">@string.Join("\n", u.AllowedFolders)</textarea>
+                                        <textarea class="form-control" name="allowedFolders" rows="4" placeholder="DISK1:/DIR
+DISK2:/HOME/USER/*">@string.Join("\n", u.AllowedFolders)</textarea>
                                         <div class="form-text">Required when only 'User' role is selected.</div>
                                     </div>
                                 </div>

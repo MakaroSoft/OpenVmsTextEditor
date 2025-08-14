@@ -144,17 +144,10 @@ namespace OpenVmsTextEditor.Web.Pages.Admin
                     .Distinct(StringComparer.Ordinal)
                     .ToList();
 
-                if (parsedFolders.Count == 0)
-                {
-                    ModelState.AddModelError(string.Empty, "Users with only the 'User' role must have at least one allowed folder.");
-                    await OnGetAsync(ct);
-                    return Page();
-                }
-
                 var existingClaims = await _userManager.GetClaimsAsync(user);
                 var allowedFolderClaims = existingClaims.Where(c => string.Equals(c.Type, "AllowedFolder", StringComparison.Ordinal)).ToList();
 
-                // Remove claims no longer present
+                // Remove claims no longer present (if parsedFolders is empty, this removes all)
                 var claimsToRemove = allowedFolderClaims.Where(c => !parsedFolders.Contains(c.Value, StringComparer.Ordinal)).ToList();
                 if (claimsToRemove.Count > 0)
                 {
