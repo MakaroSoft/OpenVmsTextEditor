@@ -11,9 +11,9 @@ import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 
 import makarosoft.VmsWeb.JwtVerifier.VerifiedToken;
-import makarosoft.vmsExplorer.Engine;
 
 
 class SocketHandler implements Runnable {
@@ -64,18 +64,11 @@ class SocketHandler implements Runnable {
             
             try {
                 VerifiedToken verifiedToken = _jwtVerifier.verify(token);
-                
-                if (verifiedToken.getRoles() == null) {
-                    respond(403, "Permission Denied.", out);
-                    return;                	
-                }
-                
-                // this is temporary
-                if (!verifiedToken.getRoles().contains("SuperUser")) {
-                    respond(403, "Permission Denied.", out);
-                    return;                	
-                }
-                
+                request.setVerifiedToken(verifiedToken);
+                // populate ThreadContext for logging pattern
+                String userName = verifiedToken.getName();
+                if (userName == null || userName.trim().isEmpty()) userName = verifiedToken.getSub();
+                if (userName != null) org.apache.logging.log4j.ThreadContext.put("user", userName);
             } catch (SecurityException e) {
             	respond(401, e.getMessage(), out);
             	return;
@@ -87,7 +80,7 @@ class SocketHandler implements Runnable {
 			
 			for (ApiController apiController : _controllers) {
 				String path = fixPath(apiController.getPath());
-				Pattern pattern = Pattern.compile("^" + path + "(/[a-z0-9_;\\-\\$\\.]+)*$", Pattern.CASE_INSENSITIVE);
+                Pattern pattern = Pattern.compile("^" + path + "(/[a-z0-9_:;\\-\\$\\.]+)*$", Pattern.CASE_INSENSITIVE);
 				Matcher matcher = pattern.matcher(request.getPath());
 			    boolean matchFound = matcher.find();
 				if (matchFound) {
@@ -132,7 +125,8 @@ class SocketHandler implements Runnable {
 				if (in != null) {
 					in.close();
 				}
-				_socket.close();
+                _socket.close();
+                ThreadContext.clearAll();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

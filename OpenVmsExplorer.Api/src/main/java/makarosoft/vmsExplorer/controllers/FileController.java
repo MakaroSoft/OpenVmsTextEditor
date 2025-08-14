@@ -17,6 +17,7 @@ import makarosoft.VmsWeb.Request;
 import makarosoft.VmsWeb.Response;
 import makarosoft.vmsExplorer.Directory.FileFormatter;
 import makarosoft.vmsExplorer.Directory.VmsFilenameFilter;
+import makarosoft.vmsExplorer.util.Authz;
 
 public class FileController extends ApiController {
 
@@ -25,11 +26,22 @@ public class FileController extends ApiController {
 	@Override
 	public void get(Request request, Response response) throws IOException {
 		try {
-			String fullName = getRelativePath(request);
+            String fullName = getRelativePath(request);
 			if (fullName == null) {
 				response.setResponseCode(404, "Not Found");
 				return;
 			}
+            makarosoft.VmsWeb.JwtVerifier.VerifiedToken token = request.getVerifiedToken();
+            if (Authz.isUserOnlyRole(token)) {
+                java.util.List<String> allowed = Authz.getAllowedFolders(token);
+                // convert full name to folder portion: drive:/path/filename -> drive:/path
+                int idx = fullName.lastIndexOf("/");
+                String folder = idx > 0 ? fullName.substring(0, idx) : fullName;
+                if (!Authz.isPathAllowed(folder, allowed)) {
+                    response.setResponseCode(403, "Forbidden");
+                    return;
+                }
+            }
 			
 			String encoding = FileFormatter.IsVmsFile(fullName)? "charset=iso-8859-1" : "charset=utf-8";
 			
@@ -51,11 +63,21 @@ public class FileController extends ApiController {
 	@Override
 	public void post(Request request, Response response) throws IOException {
 		try {
-			String fullName = getRelativePath(request);
+            String fullName = getRelativePath(request);
 			if (fullName == null) {
 				response.setResponseCode(404, "Not Found");
 				return;
 			}
+            makarosoft.VmsWeb.JwtVerifier.VerifiedToken token = request.getVerifiedToken();
+            if (Authz.isUserOnlyRole(token)) {
+                java.util.List<String> allowed = Authz.getAllowedFolders(token);
+                int idx = fullName.lastIndexOf("/");
+                String folder = idx > 0 ? fullName.substring(0, idx) : fullName;
+                if (!Authz.isPathAllowed(folder, allowed)) {
+                    response.setResponseCode(403, "Forbidden");
+                    return;
+                }
+            }
 			
 			String encoding = FileFormatter.IsVmsFile(fullName)? "charset=iso-8859-1" : "charset=utf-8";
 			String newVersion = saveFile(fullName, request.getBody());

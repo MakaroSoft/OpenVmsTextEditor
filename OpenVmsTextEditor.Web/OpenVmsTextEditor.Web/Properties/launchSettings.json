@@ -3,7 +3,7 @@
     "VmsEditor": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "VmsEditor?startPath=c/users/troy/downloads/diff",
+      "launchUrl": "VmsEditor?startPath=c:/users/troy/downloads/diff",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

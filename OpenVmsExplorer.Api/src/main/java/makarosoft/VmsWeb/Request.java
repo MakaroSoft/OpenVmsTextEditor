@@ -19,6 +19,7 @@ public class Request {
 	private Map<String, String> _queryParameters = new HashMap<String, String>();
 	private BufferedReader _in;
 	Logger _logger = LogManager.getLogger(Request.class);
+	private JwtVerifier.VerifiedToken _verifiedToken;
 
 	public Request(BufferedReader in) {
 		_in = in;
@@ -63,6 +64,13 @@ public class Request {
 		return _fullUrl;
 	}
 
+	public void setVerifiedToken(JwtVerifier.VerifiedToken token) {
+		_verifiedToken = token;
+	}
+	public JwtVerifier.VerifiedToken getVerifiedToken() {
+		return _verifiedToken;
+	}
+
 	// TODO support mutli-value headers
 	public String getHeader(String headerName) {
 		return _headers.get(headerName);
@@ -93,7 +101,7 @@ public class Request {
 	public boolean parse() throws IOException {
 		String initialLine = _in.readLine();
 		if (initialLine == null) {
-			_logger.debug("*************: {}", initialLine);
+			_logger.debug("*************: nothing to parse");
 			return false;
 		}
 		_logger.debug(initialLine);
@@ -114,7 +122,7 @@ public class Request {
 		// Consume headers
 		while (true) {
 			String headerLine = _in.readLine();
-			_logger.debug(headerLine);
+			_logger.trace(headerLine);
 			if (headerLine.length() == 0) {
 				break;
 			}
