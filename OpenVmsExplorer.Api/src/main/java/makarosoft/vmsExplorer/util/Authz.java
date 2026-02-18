@@ -13,10 +13,10 @@ import makarosoft.VmsWeb.JwtVerifier.VerifiedToken;
 public final class Authz {
     private Authz() {}
 
-    public static boolean isUserOnlyRole(VerifiedToken token) {
+    public static boolean isPrivileged(VerifiedToken token) {
         if (token == null || token.getRoles() == null) return false;
         List<String> roles = token.getRoles();
-        return roles.size() == 1 && roles.contains("User");
+        return roles.contains("Admin") || roles.contains("SuperUser");
     }
 
     public static List<String> getAllowedFolders(VerifiedToken token) {

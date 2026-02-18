@@ -32,7 +32,7 @@ public class FileController extends ApiController {
 				return;
 			}
             makarosoft.VmsWeb.JwtVerifier.VerifiedToken token = request.getVerifiedToken();
-            if (Authz.isUserOnlyRole(token)) {
+            if (!Authz.isPrivileged(token)) {
                 java.util.List<String> allowed = Authz.getAllowedFolders(token);
                 // convert full name to folder portion: drive:/path/filename -> drive:/path
                 int idx = fullName.lastIndexOf("/");
@@ -69,7 +69,7 @@ public class FileController extends ApiController {
 				return;
 			}
             makarosoft.VmsWeb.JwtVerifier.VerifiedToken token = request.getVerifiedToken();
-            if (Authz.isUserOnlyRole(token)) {
+            if (!Authz.isPrivileged(token)) {
                 java.util.List<String> allowed = Authz.getAllowedFolders(token);
                 int idx = fullName.lastIndexOf("/");
                 String folder = idx > 0 ? fullName.substring(0, idx) : fullName;

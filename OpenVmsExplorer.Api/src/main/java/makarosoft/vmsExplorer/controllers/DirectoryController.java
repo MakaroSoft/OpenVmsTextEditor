@@ -36,7 +36,7 @@ public class DirectoryController extends ApiController {
             makarosoft.VmsWeb.JwtVerifier.VerifiedToken token = request.getVerifiedToken();
             java.util.List<String> allowed = null;
             java.util.Set<String> allowedDisks = null;
-            boolean enforce = Authz.isUserOnlyRole(token);
+            boolean enforce = !Authz.isPrivileged(token);
             String normFolder = normalizeToPath(folder);
             if (enforce) {
                 allowed = Authz.getAllowedFolders(token);

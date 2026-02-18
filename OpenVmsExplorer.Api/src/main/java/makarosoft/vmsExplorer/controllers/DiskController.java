@@ -33,7 +33,7 @@ public class DiskController extends ApiController {
 
         	ArrayList<String> disks = getDisks();
             makarosoft.VmsWeb.JwtVerifier.VerifiedToken token = request.getVerifiedToken();
-            if (Authz.isUserOnlyRole(token)) {
+            if (!Authz.isPrivileged(token)) {
                 java.util.Set<String> allowed = Authz.allowedDisks(Authz.getAllowedFolders(token));
                 disks.removeIf(d -> !allowed.contains(parse(d).toLowerCase()));
             }
